@@ -1,71 +1,73 @@
-
-#include <stdint.h>
-#include <stdio.h>
-#include <pthread.h>
-void ler_op(char *linha);
-char state = 'N';
-
-void ler_op(char *linha){
-    fgets(linha, sizeof (linha), stdin);
-    linha[strcpsn(linha, "\n")] = 0;
-}
+#include "threads.h"
+char commands = 'O';
+char state_v = '_';
 int main(){
-    int n;
-    int c=0;
-    //char op;
-    char linha[100];  
+    FILE *f[2];
+    char buffer[100];
+    pid_t pid;
+    pid = fork();
 
-    switch (state)
-    {
-    case 'D':
-        int x;
-        state='V';
-        break;
-    case 'V':
-        while(c < n){
-           scanf("%d",&x); //Tem que ser um vetor com x
-           printf("\n");
-           c++;
-        }
-        ler_op(&linha[0]);
-        c=0;
-        state=linha[0];
-
-        break;
-    case 'A':
-        int up_offset;
-        while(c < n){
-            scanf("%d", &up_offset);
-            x+=up_offset; //x tem que ser vetor
-        }
-        ler_op(&linha[0]);
-        c=0;
-        state=linha[0];
-        break;    
-    case 'S':
-        int down_offset;
-            while(c < n){
-                scanf("%d", &down_offset);
-                x-=down_offset; //x tem que ser vetor
-            }
-        ler_op(&linha[0]);
-        c=0;
-        state=linha[0];
-        break;
-    case 'B':
-        //Bloqueia
-        break;
-    case 'T':
-        //Termina
-        break;
-    case 'F':
-        break;
-    case 'R':
-        break;
-    default:
-        scanf("%d",&n);
-        state='D';
-        break;
+    if(pid < 0){
+        exit(1);
     }
+
+    if(pid == 0){
+            pthread_t           thread[2];    //Parâmetros da thread main
+            pthread_attr_t      attrs[2];
+            struct sched_param  Param[2];
+            int                 retc[2];
+            pthread_attr_init(&attrs[0]);
+            retc[0] = pthread_attr_setschedparam(&attrs[0], &Param[0]);
+            retc[0] |= pthread_attr_setdetachstate(&attrs[0], PTHREAD_CREATE_DETACHED);
+            retc[0] |= pthread_attr_setstacksize(&attrs[0], THREADSTACKSIZE);
+            retc[0] = pthread_create(&thread[0], &attrs[0], threads, NULL);
+            if(retc[0] == 0){
+                printf("Thread 1 aqui\n");
+            }
+            f[0] = fopen("teste.txt", "r");
+            if(f[0]==NULL){
+                printf("Problema no f0\n");
+                exit(1);
+            }
+            while(ler_op(&buffer[0],f[0])!=1){    
+                state_v=buffer[0];
+                if(state_v=='N'){
+                    retc[1] = pthread_attr_setschedparam(&attrs[1], &Param[1]);
+                    retc[1] |= pthread_attr_setdetachstate(&attrs[1], PTHREAD_CREATE_DETACHED);
+                    retc[1] |= pthread_attr_setstacksize(&attrs[1], THREADSTACKSIZE);
+                    retc[1] = pthread_create(&thread[1], &attrs[1], threads, NULL);
+                    if(retc[1] == 0){
+                        printf("Thread 2 aqui\n");
+                    }
+                }
+            }
+            
+            fclose(f[0]);
+            /*pthread_cancel(thread[0]);
+            pthread_cancel(thread[1]);*/
+
+
+    }
+
+    else{
+        switch (commands){
+        case 'U':
+
+            break;
+
+        case 'L':
+            break;
+
+        case 'I':
+            break;
+
+        case 'M':
+            break;
+
+        default:
+            break;
+        }
+    }
+
     return 0;
 }
