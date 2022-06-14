@@ -12,24 +12,15 @@ int main(){
     }
 
     if(pid == 0){
-            pthread_t           thread[2];    //Parâmetros da thread main
-            pthread_attr_t      attrs[2];
-            struct sched_param  Param[2];
-            int                 retc[2];
-            pthread_attr_init(&attrs[0]);
-            retc[0] = pthread_attr_setschedparam(&attrs[0], &Param[0]);
-            retc[0] |= pthread_attr_setdetachstate(&attrs[0], PTHREAD_CREATE_DETACHED);
-            retc[0] |= pthread_attr_setstacksize(&attrs[0], THREADSTACKSIZE);
-            retc[0] = pthread_create(&thread[0], &attrs[0], threads, NULL);
-            if(retc[0] == 0){
-                printf("Thread 1 aqui\n");
-            }
-            f[0] = fopen("teste.txt", "r");
-            if(f[0]==NULL){
-                printf("Problema no f0\n");
-                exit(1);
-            }
-            while(ler_op(&buffer[0],f[0])!=1){    
+            pthread_t           thread;    //Parâmetros da thread main
+            pthread_attr_t      attrs;
+            int                 retc;
+            pthread_attr_init(&attrs);
+            retc |= pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+            retc |= pthread_attr_setstacksize(&attrs, THREADSTACKSIZE);
+            retc = pthread_create(&thread, &attrs, &threads, NULL);
+            
+            /*while(ler_op(&buffer[0],f[0])!=1){    
                 state_v=buffer[0];
                 if(state_v=='N'){
                     retc[1] = pthread_attr_setschedparam(&attrs[1], &Param[1]);
@@ -40,9 +31,9 @@ int main(){
                         printf("Thread 2 aqui\n");
                     }
                 }
-            }
+            }*/
             
-            fclose(f[0]);
+            //fclose(f[0]);
             /*pthread_cancel(thread[0]);
             pthread_cancel(thread[1]);*/
 
@@ -51,23 +42,23 @@ int main(){
 
     else{
         switch (commands){
-        case 'U':
+            case 'U':
 
-            break;
+                break;
 
-        case 'L':
-            break;
+            case 'L':
+                break;
 
-        case 'I':
-            break;
+            case 'I':
+                break;
 
-        case 'M':
-            break;
+            case 'M':
+                break;
 
-        default:
-            break;
+            default:
+                break;
         }
     }
-
+    sleep(50);
     return 0;
 }
