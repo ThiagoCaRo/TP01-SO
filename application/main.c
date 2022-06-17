@@ -9,18 +9,42 @@
 #include <inttypes.h>
 #include <signal.h>
 #define THREADSTACKSIZE    1024
+#define MAX_MEM    100
 
 char commands = 'O';
 char state;
+int j=0;
+int k;
 int c=0;
-int mutex=1;
+int thread_counter;
+char instruction_backup[MAX_MEM];
+//int mutex=1;
 int s[5];
-pthread_t TID[5];
-sem_t sem[5];
+sem_t sem[MAX_MEM];
+struct timespec start_r;
+struct timespec end_r;
 
 int ler_op_mestre(char *linha, FILE *file);
 int ler_op(char *linha, FILE *file);
 void estados(char *buffer);
+
+typedef struct{
+    double tempo;
+    char programa[MAX_MEM];
+    int n;
+    int pc;
+    int X[MAX_MEM];
+    int indice,valor;
+}CPU;
+typedef struct{
+    pthread_t TID[MAX_MEM];
+    pthread_t BLOQUEADO[MAX_MEM];
+    pthread_t PRONTO[MAX_MEM];
+    pthread_t EXECUCAO;
+}TABELA;
+
+CPU cpu_structure;
+TABELA tabela_structure;
 /*void up(int *semaphore){
     *semaphore+=1;
 }
@@ -28,60 +52,98 @@ void down(int *semaphore){
     *semaphore-=1;
 }*/
 
-void *threadZero(void *arg0){
-    //sem_wait(&sem_inicial);
-    printf("\nSOU A THREAD 0\n");
-    int n;
-    FILE *fp;
-    char nome_arq[61];
-    char buffer[100];
-    printf("Entre com o arquivo de comando da Thread\n\n");
-    scanf("%s",nome_arq);
-    fp=fopen(nome_arq,"r");
-    if(fp==NULL){
-        printf("Problema no f0\n");
-        exit(1);
-    }
-    while(1){
-        if(ler_op(&buffer[0],fp)!=0){
-            break;
-        }
-    }
-    
-    
-    fclose(fp);
-    
-    /*if(c==2){
-        exit(1);
-    }*/
-    //char op;
-    
+double time_diff(struct timespec *start, struct timespec *end){
 
+    //Função para calcular o tempo em segundos para operações como optime e timeout
+
+    return (end->tv_sec - start->tv_sec) + 1e-9*(end->tv_nsec - start->tv_nsec);
+}
+
+int ler_op(char *linha, FILE *file){
+    int verify;
+    if(fgets(linha, MAX_MEM, file)!=NULL){
+        //printf("VERIFY 0");
+        verify=0;
+    }
+    else{
+        //printf("VERIFY 1");
+        verify=1;
+        return verify;
+    }
+    linha[strcspn(linha, "\n")] = 0;
+    cpu_structure.programa[k]=linha[0];
+    k++;
+    estados(linha);
+    return verify;
 }
 
 void *threads(void *arg0){
+    
     printf("ANTES DO SEMAPHORE %d\n",c);
     sem_wait(&sem[c]);
+    cpu_structure.pc=0;
+    k=0;
+    for(int i=0;i<MAX_MEM;i++){
+        cpu_structure.programa[i]='-';
+    }
+    clock_gettime(CLOCK_REALTIME, &start_r);
+    clock_gettime(CLOCK_REALTIME, &end_r);
     printf("\nSOU UMA THREAD\n");
-    c++;
+    //c++;
     printf("\n\n\n\nval = %d \n\n\n",c);
-    int n;
+    //int n;
     FILE *fp;
     char nome_arq[61];
-    char buffer[100];
-    printf("Entre com o arquivo de comando da Thread\n\n");
-    scanf("%s",nome_arq);
-    fp=fopen(nome_arq,"r");
-    if(fp==NULL){
-        printf("Problema no f0\n");
-        exit(1);
+    char buffer[MAX_MEM];
+    char temp[MAX_MEM];
+    printf("Entre com o arquivo de comando da Thread\n");
+    //sem_wait(&sem[0]);
+    while(fp==NULL){
+        printf("\n");
+        scanf("%s",nome_arq);
+        fp=fopen(nome_arq,"r");
+        if(fp!=NULL){
+            break;
+        }
+        printf("Problema ao abrir o arquivo\n");
     }
+
+    /*while(1){
+        int verify;
+        if(fgets(temp, MAX_MEM, fp)!=NULL){
+            //printf("VERIFY 0");
+            verify=0;
+        }
+        else{
+            verify=1;
+            break;
+        }
+        temp[strcspn(temp, "\n")] = 0;
+        cpu_structure.programa[k]=temp[0];
+        k++;
+    }*/
+    /*clock_gettime(CLOCK_REALTIME, &end_r);
+    if((time_diff(&start_r, &end_r))>=1.0){
+        printf("Antes de parar novamente\n");
+        sem_wait(&sem[c]);
+    }*
+    printf("Depois de parar novamente\n");*/
     while(1){
+        if(state=='T'){
+            for(int i=0;i<MAX_MEM-1;i++){
+                tabela_structure.TID[i]=tabela_structure.TID[i+1];
+                if(i==MAX_MEM-2){
+                    tabela_structure.TID[MAX_MEM-1]=-1;
+                }
+                
+            }
+            printf("Antes de sair\n");
+            pthread_exit(NULL);
+        }
         if(ler_op(&buffer[0],fp)!=0){
             break;
         }
     }
-    
     
     fclose(fp);
     
@@ -93,6 +155,113 @@ void *threads(void *arg0){
 
 
 }
+
+
+
+void estados(char *buffer){
+    /*int n;
+    int X[MAX_MEM];
+    int indice,valor;*/
+
+    state=buffer[0];
+    switch (state){
+        case 'N':
+            int i;
+            sscanf(buffer,"%*[^0123456789]%d",&cpu_structure.n);
+            sem_wait(&sem[thread_counter]);
+            break;
+        case 'D':
+            for(i=0;i<cpu_structure.n;i++){
+                cpu_structure.X[i]=0;
+            }
+            for(i=0;i>cpu_structure.n && i<MAX_MEM;i++){
+                cpu_structure.X[i]=-1;
+            }
+            
+            sem_wait(&sem[thread_counter]);
+            break;
+
+        case 'V':
+            sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
+            cpu_structure.X[cpu_structure.indice]=cpu_structure.valor;
+            sem_wait(&sem[thread_counter]);
+            break;
+
+        case 'A':
+            sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
+            cpu_structure.X[cpu_structure.indice]+=cpu_structure.valor;
+            //printf("VALOR :%d\n\n",X[indice]);
+            sem_wait(&sem[thread_counter]);
+            break;   
+    
+        case 'S':
+            sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
+            cpu_structure.X[cpu_structure.indice]-=cpu_structure.valor;
+            printf("VALOR :X[%d] = %d\n\n",cpu_structure.indice, cpu_structure.X[cpu_structure.indice]);
+            sem_wait(&sem[thread_counter]);
+            break;
+
+        case 'B':
+            if(thread_counter==0 && tabela_structure.TID[thread_counter+1]!=-1){
+                tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
+                tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter+1];
+                thread_counter++;
+                sem_wait(&sem[thread_counter-1]);
+            }
+            else if(thread_counter!=0){
+                if(thread_counter<MAX_MEM-1 && tabela_structure.TID[thread_counter+1]!=-1){
+                    tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
+                    tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter+1];
+                    thread_counter++;
+                    sem_wait(&sem[thread_counter-1]);
+                }
+                else if(thread_counter==MAX_MEM-1){
+                    int aux = thread_counter;
+                    tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
+                    thread_counter=0;
+                    tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter];
+                    sem_wait(&sem[aux]);
+                }
+
+            }
+            //sem_timedwait(&sem[thread_counter],)
+            break;
+
+        case 'T':
+            //Termina
+            /*if(TID[thread_counter+1]!=-1){
+                thread_counter++;
+            }*/
+            break;
+
+        case 'F':
+            //printf("\n\nESTADO B\n\n");
+            pthread_t           threadsim;    //Parâmetros da thread main
+            pthread_attr_t      attrsim;
+            int                 retcsim;
+            pthread_attr_init(&attrsim);
+            retcsim |= pthread_attr_setdetachstate(&attrsim, PTHREAD_CREATE_DETACHED);
+            retcsim |= pthread_attr_setstacksize(&attrsim, THREADSTACKSIZE);
+            c++;
+            retcsim = pthread_create(&threadsim, &attrsim, &threads, NULL);
+            //printf("C: %d\n\n",c);
+            tabela_structure.TID[c]=threadsim;
+            
+            
+            //TID[c]=threadsim;
+            sem_wait(&sem[thread_counter]);
+            break;
+
+        case 'R':
+            break;
+
+        default:
+            state='N';
+            break;
+    }
+}
+
+
 
 
 int ler_op_mestre(char *linha, FILE *file){
@@ -111,95 +280,7 @@ int ler_op_mestre(char *linha, FILE *file){
     return verify;
 }
 
-int ler_op(char *linha, FILE *file){
-    //printf("LER OP AQUI\n");
-    int verify;
-    if(fgets(linha, sizeof (linha), file)!=NULL){
-        //printf("VERIFY 0");
-        verify=0;
-    }
-    else{
-        //printf("VERIFY 1");
-        verify=1;
-        return verify;
-    }
-    linha[strcspn(linha, "\n")] = 0;
-    estados(&linha[0]);
-    return verify;
-}
 
-
-
-void estados(char *buffer){
-    int c = 0;
-    int n;
-    state=buffer[0];
-    //printf("ESTADO: %c\n",state);
-    switch (state){
-        case 'D':
-            int x;
-            state='V';
-            break;
-
-        case 'V':
-            while(c < n){
-            scanf("%d",&x); //Tem que ser um vetor com x
-            printf("\n");
-            c++;
-            }
-            //ler_op(&linha[0]);
-            /*c=0;
-            state=buffer[0];*/
-            break;
-
-        case 'A':
-            int up_offset;
-            while(c < n){
-                scanf("%d", &up_offset);
-                x+=up_offset; //x tem que ser vetor
-            }
-            //ler_op(&linha[0]);
-            /*c=0;
-            state=buffer[0];*/
-            break;   
-    
-        case 'S':
-            int down_offset;
-                while(c < n){
-                    scanf("%d", &down_offset);
-                    x-=down_offset; //x tem que ser vetor
-                }
-            //ler_op(&linha[0]);
-            /*c=0;
-            state=linha[0];*/
-            break;
-
-        case 'B':
-            pthread_t           threadsim;    //Parâmetros da thread main
-            pthread_attr_t      attrsim;
-            int                 retcsim;
-            pthread_attr_init(&attrsim);
-            retcsim |= pthread_attr_setdetachstate(&attrsim, PTHREAD_CREATE_DETACHED);
-            retcsim |= pthread_attr_setstacksize(&attrsim, THREADSTACKSIZE);
-            retcsim = pthread_create(&threadsim, &attrsim, &threads, NULL);
-            //TID[c]=threadsim;
-            break;
-
-        case 'T':
-            //Termina
-            break;
-
-        case 'F':
-            break;
-
-        case 'R':
-            break;
-
-        default:
-            state='N';
-            break;
-    }
-}
 
 int main(){
     for(int i=0;i<5;i++){
@@ -222,8 +303,12 @@ int main(){
     }
 
     if(pid == 0){
-            char rx[20];
+            char rx[MAX_MEM];
+            int counter=0;
             close(descriptor[1]);
+            for(int i=0;i<MAX_MEM;i++){
+                tabela_structure.TID[i]=-1;
+            }
             //printf("GERENCIADOR\n");
             pthread_t           thread;    //Parâmetros da thread main
             pthread_attr_t      attrs;
@@ -232,33 +317,47 @@ int main(){
             retc |= pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
             retc |= pthread_attr_setstacksize(&attrs, THREADSTACKSIZE);
             retc = pthread_create(&thread, &attrs, &threads, NULL);
+            tabela_structure.TID[0]=thread;
+            tabela_structure.BLOQUEADO[0]=thread;
             read(descriptor[0], rx, sizeof(rx));
-
-            printf("%s\n\n",rx);
+            /*printf("RX : %s\n\n",rx);
+            printf("TAMANHO RX: %lu\n\n",strlen(rx));*/
             
-            //TID[0]=thread;
-            /*while(ler_op(&buffer[0],f[0])!=1){    
-                state_v=buffer[0];
-                if(state_v=='N'){
-                    retc[1] = pthread_attr_setschedparam(&attrs[1], &Param[1]);
-                    retc[1] |= pthread_attr_setdetachstate(&attrs[1], PTHREAD_CREATE_DETACHED);
-                    retc[1] |= pthread_attr_setstacksize(&attrs[1], THREADSTACKSIZE);
-                    retc[1] = pthread_create(&thread[1], &attrs[1], threads, NULL);
-                    if(retc[1] == 0){
-                        printf("Thread 2 aqui\n");
-                    }
+            while(counter<strlen(rx)){
+                commands=rx[counter];
+                //printf("COMANDO: %c\n\n",commands);
+                switch (commands){
+                    case 'S':
+                        //printf("S\n");
+                        //Apenas para liberar a execução inicial
+                        sem_post(&sem[thread_counter]);
+                        break; 
+                    case 'U':
+                        //printf("U\n");
+                        sem_post(&sem[thread_counter]); 
+                        
+                        break;
+
+                    case 'L':
+                        break;
+
+                    case 'I':
+                        break;
+
+                    case 'M':
+                        break;
+
+                    default:
+                        break;
                 }
-            }*/
+                counter++; 
+            }
             
-            //fclose(f[0]);
-            /*pthread_cancel(thread[0]);
-            pthread_cancel(thread[1]);*/
-
 
     }
 
     else{
-        char tx[20];
+        char tx[MAX_MEM];
         char temp[2];
         f=fopen("arquivo_mestre.txt","r");
         close(descriptor[0]);
@@ -308,6 +407,7 @@ int main(){
         fclose(f);
         
     }
+    
     sleep(50);
     return 0;
 }
