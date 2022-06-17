@@ -8,7 +8,10 @@
 #include <semaphore.h>
 #include <inttypes.h>
 #include <signal.h>
+#include <stdbool.h>
 #define THREADSTACKSIZE    1024
+#define true 1
+#define false 0
 #define MAX_MEM    100
 
 char commands = 'O';
@@ -16,7 +19,8 @@ char state;
 int j=0;
 int k;
 int c=0;
-int thread_counter;
+bool flag = false;
+int thread_counter=0;
 char instruction_backup[MAX_MEM];
 //int mutex=1;
 int s[5];
@@ -78,9 +82,10 @@ int ler_op(char *linha, FILE *file){
 }
 
 void *threads(void *arg0){
-    
-    printf("ANTES DO SEMAPHORE %d\n",c);
+    flag=true;
     sem_wait(&sem[c]);
+    /*tabela_structure.BLOQUEADO[c]=-1;
+    tabela_structure.EXECUCAO=tabela_structure.BLOQUEADO[c];*/
     cpu_structure.pc=0;
     k=0;
     for(int i=0;i<MAX_MEM;i++){
@@ -88,9 +93,6 @@ void *threads(void *arg0){
     }
     clock_gettime(CLOCK_REALTIME, &start_r);
     clock_gettime(CLOCK_REALTIME, &end_r);
-    printf("\nSOU UMA THREAD\n");
-    //c++;
-    printf("\n\n\n\nval = %d \n\n\n",c);
     //int n;
     FILE *fp;
     char nome_arq[61];
@@ -137,7 +139,6 @@ void *threads(void *arg0){
                 }
                 
             }
-            printf("Antes de sair\n");
             pthread_exit(NULL);
         }
         if(ler_op(&buffer[0],fp)!=0){
@@ -168,6 +169,7 @@ void estados(char *buffer){
         case 'N':
             int i;
             sscanf(buffer,"%*[^0123456789]%d",&cpu_structure.n);
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;
         case 'D':
@@ -177,13 +179,14 @@ void estados(char *buffer){
             for(i=0;i>cpu_structure.n && i<MAX_MEM;i++){
                 cpu_structure.X[i]=-1;
             }
-            
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;
 
         case 'V':
             sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
             cpu_structure.X[cpu_structure.indice]=cpu_structure.valor;
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;
 
@@ -191,6 +194,7 @@ void estados(char *buffer){
             sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
             cpu_structure.X[cpu_structure.indice]+=cpu_structure.valor;
             //printf("VALOR :%d\n\n",X[indice]);
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;   
     
@@ -198,6 +202,7 @@ void estados(char *buffer){
             sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
             cpu_structure.X[cpu_structure.indice]-=cpu_structure.valor;
             printf("VALOR :X[%d] = %d\n\n",cpu_structure.indice, cpu_structure.X[cpu_structure.indice]);
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;
 
@@ -206,13 +211,18 @@ void estados(char *buffer){
                 tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
                 tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter+1];
                 thread_counter++;
+                printf("THREAD COUNTER :%d\n\n\n",thread_counter);
+                printf("\n\n\n EXEC APOS TROCA: %lu\n\n\n",tabela_structure.EXECUCAO);
+                flag=true;
                 sem_wait(&sem[thread_counter-1]);
             }
             else if(thread_counter!=0){
                 if(thread_counter<MAX_MEM-1 && tabela_structure.TID[thread_counter+1]!=-1){
                     tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
                     tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter+1];
+                    printf("EXEC :%lu\n\n\n",tabela_structure.EXECUCAO);
                     thread_counter++;
+                    flag=true;
                     sem_wait(&sem[thread_counter-1]);
                 }
                 else if(thread_counter==MAX_MEM-1){
@@ -220,6 +230,7 @@ void estados(char *buffer){
                     tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.TID[thread_counter];
                     thread_counter=0;
                     tabela_structure.EXECUCAO=tabela_structure.TID[thread_counter];
+                    flag=true;
                     sem_wait(&sem[aux]);
                 }
 
@@ -242,13 +253,13 @@ void estados(char *buffer){
             pthread_attr_init(&attrsim);
             retcsim |= pthread_attr_setdetachstate(&attrsim, PTHREAD_CREATE_DETACHED);
             retcsim |= pthread_attr_setstacksize(&attrsim, THREADSTACKSIZE);
-            c++;
             retcsim = pthread_create(&threadsim, &attrsim, &threads, NULL);
-            //printf("C: %d\n\n",c);
+            c++;
             tabela_structure.TID[c]=threadsim;
             
             
             //TID[c]=threadsim;
+            flag=true;
             sem_wait(&sem[thread_counter]);
             break;
 
@@ -283,7 +294,7 @@ int ler_op_mestre(char *linha, FILE *file){
 
 
 int main(){
-    for(int i=0;i<5;i++){
+    for(int i=0;i<MAX_MEM;i++){
         sem_init(&sem[i], 0, 0);
     }
     
@@ -325,6 +336,12 @@ int main(){
             
             while(counter<strlen(rx)){
                 commands=rx[counter];
+                while(1){
+                    if(flag==true){
+                        flag=false;
+                        break;
+                    }
+                }
                 //printf("COMANDO: %c\n\n",commands);
                 switch (commands){
                     case 'S':
@@ -333,8 +350,8 @@ int main(){
                         sem_post(&sem[thread_counter]);
                         break; 
                     case 'U':
-                        //printf("U\n");
-                        sem_post(&sem[thread_counter]); 
+                        printf("\nSEM[%d]\n",thread_counter);
+                        sem_post(&sem[thread_counter]);
                         
                         break;
 
