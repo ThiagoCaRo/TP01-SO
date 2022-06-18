@@ -29,7 +29,7 @@ typedef struct{
 }CPU;
 
 typedef struct{
-    pid_t TID[MAX_MEM];
+    pid_t PID[MAX_MEM];
     pthread_t BLOQUEADO[MAX_MEM];
     pthread_t PRONTO[MAX_MEM];
     pthread_t EXECUCAO;
@@ -232,9 +232,9 @@ void simulados(){
     while(1){
         if(state=='T'){
             for(int i=0;i<MAX_MEM-1;i++){
-                tabela_structure.TID[i]=tabela_structure.TID[i+1];
+                tabela_structure.PID[i]=tabela_structure.PID[i+1];
                 if(i==MAX_MEM-2){
-                    tabela_structure.TID[MAX_MEM-1]=-1;
+                    tabela_structure.PID[MAX_MEM-1]=-1;
                 }
                 
             }
@@ -270,8 +270,10 @@ int main(){
     }
 
     if(pid>0){
+        printf("PAI\n");
         char tx[MAX_MEM];
         char temp[2];
+        kill(pid, SIGSTOP);
         f = fopen("arquivo_mestre.txt", "r");
         close(descriptor[0]);
         printf("0 - Ler do arquivo           1 - Ler por entrada padrao\n\n");
@@ -284,67 +286,96 @@ int main(){
                 temp[strcspn(temp, "\n")] = 0;
                 strcat(tx,temp);
             }
+            kill(pid, SIGCONT);
             write(descriptor[1],tx,sizeof(tx));
         }
         fclose(f);
     }
 
     else{
-        int c = 0;
-        c_aux=&c;
-        char rx[MAX_MEM];
-        close(descriptor[1]);
-        for(int i=0;i<MAX_MEM;i++){
-            tabela_structure.TID[i]=-1;
-            tabela_structure.BLOQUEADO[i]=-1;
-            tabela_structure.PRONTO[i]=-1;
-            
+        pid_t pidsim0;
+        /*if(c==0 || state == 'F'){
+            printf("NAO FEITO\n");
+        }*/
+        pidsim0=fork();
+
+        if(pidsim0<0){
+            exit(1);
         }
-        read(descriptor[0], rx, sizeof(rx));
-        //create_thread(&thread, c_aux);
-        if(fork()==0){
-            int contador=0;
-            tabela_structure.TID[*c_aux]=getpid();
-            tabela_structure.PRONTO[*c_aux]=tabela_structure.TID[*c_aux];
-            cpu_structure.pc=0;
-            simulados();
-            printf("X[0] = %d e X[1] = %d\n\n",cpu_structure.X[0],cpu_structure.X[1]);
-        }
-        printf("PID: %d\n",tabela_structure.TID[*c_aux]);
-        while(counter<strlen(rx)){
-            commands=rx[counter];
-            while(1){
-                if(flag==true){
-                    flag=false;
-                    break;
+        if(pidsim0>0){
+            printf("FILHO DO PAI\n");
+            int c = 0;
+            c_aux=&c;
+            kill(pidsim0 , SIGSTOP);
+            char rx[MAX_MEM];
+            close(descriptor[1]);
+            for(int i=0;i<MAX_MEM;i++){
+                tabela_structure.PID[i]=-1;
+                tabela_structure.BLOQUEADO[i]=-1;
+                tabela_structure.PRONTO[i]=-1;
+                
+            }
+            read(descriptor[0], rx, sizeof(rx));
+            kill(pidsim0, SIGCONT);
+            printf("RX: %s\n",rx);
+            if(flag==true){
+                flag=false;
+                sleep(5);
+                kill(pidsim0, SIGCONT);
+            }
+            printf("ue\n");
+            //create_thread(&thread, c_aux);
+            /*if(fork()==0){
+                int contador=0;
+                tabela_structure.TID[*c_aux]=getpid();
+                tabela_structure.PRONTO[*c_aux]=tabela_structure.TID[*c_aux];
+                cpu_structure.pc=0;
+                simulados();
+                printf("X[0] = %d e X[1] = %d\n\n",cpu_structure.X[0],cpu_structure.X[1]);
+            }*/
+            /*while(counter<strlen(rx)){
+                flag = false;
+                kill(pidsim0, SIGSTOP);
+                commands=rx[counter];
+                while(1){
+                    if(flag==true){
+                        flag=false;
+                        break;
+                    }
                 }
-            }
-            switch (commands){
-                case 'U':
-                    cpu_structure.pc++;
-                    //SEMAFORE TA COM PROBLEMA
-                    sem_post(&sem[process_counter]);
-                    
-                    break;
+                switch (commands){
+                    case 'U':
+                        cpu_structure.pc++;
+                        //SEMAFORE TA COM PROBLEMA
+                        
+                        break;
 
-                case 'L':
-                    break;
+                    case 'L':
+                        break;
 
-                case 'I':
-                    break;
+                    case 'I':
+                        break;
 
-                case 'M':
-                    break;
+                    case 'M':
+                        break;
 
-                default:
-                    break;
-            }
-            counter++;
+                    default:
+                        break;
+                }
+                counter++;
+            }*/
         }
+        else{
+            tabela_structure.PID[0] = getpid();
+            tabela_structure.PRONTO[0]=tabela_structure.PID[0];
+            flag = true;
+            printf("Continuou\n");
+        }
+        
         
     }
     while(ctrl==false){
-        //Espera
+
     }
     return 0;
 }
