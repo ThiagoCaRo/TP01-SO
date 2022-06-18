@@ -19,9 +19,12 @@ char state;
 int j=0;
 int k;
 int c=0;
+
+FILE *fp[MAX_MEM];
 bool mutex = false;
 bool flag = false;
-int thread_counter=0;
+bool ctrl=false;
+int thread_counter, thread_aux=0;
 char instruction_backup[MAX_MEM];
 //int mutex=1;
 int s[5];
@@ -151,6 +154,7 @@ void *threads(void *arg0){
 void estados(char *buffer){
     //printf("MAQUINA DE ESTADOS DA THREAD %d\n\n",thread_counter);
     state=buffer[0];
+    usleep(50000);
     switch (state){
         case 'N':
             int i;
@@ -187,6 +191,29 @@ void estados(char *buffer){
             sscanf(buffer,"%*[^0123456789]%d%*[^0123456789]%d",&cpu_structure.indice, &cpu_structure.valor);
             cpu_structure.X[cpu_structure.indice]-=cpu_structure.valor;
             flag=true;
+            //sem_wait(&sem[thread_counter]);
+            break;
+        case 'F':
+            
+            mutex = true;
+            pthread_t           threadsim;    //Parâmetros da thread main
+            pthread_attr_t      attrsim;
+            int                 retcsim;
+            pthread_attr_init(&attrsim);
+
+            thread_aux++;
+            mutex=false;
+            retcsim |= pthread_attr_setdetachstate(&attrsim, PTHREAD_CREATE_DETACHED);
+            fflush(stdout);
+            retcsim = pthread_create(&threadsim, &attrsim, &threads, NULL);
+            
+            if (retcsim != 0) {
+                printf("FALHA AO CRIAR\n");
+            }
+            tabela_structure.TID[thread_aux]=threadsim;
+            tabela_structure.PRONTO[thread_aux]=tabela_structure.TID[thread_aux];
+            
+            //TID[c]=threadsim;
             //sem_wait(&sem[thread_counter]);
             break;
 
@@ -240,26 +267,6 @@ void estados(char *buffer){
             /*if(TID[thread_counter+1]!=-1){
                 thread_counter++;
             }*/
-            break;
-
-        case 'F':
-            pthread_t           threadsim;    //Parâmetros da thread main
-            pthread_attr_t      attrsim;
-            int                 retcsim;
-            pthread_attr_init(&attrsim);
-            retcsim |= pthread_attr_setdetachstate(&attrsim, PTHREAD_CREATE_DETACHED);
-            retcsim = pthread_create(&threadsim, &attrsim, &threads, NULL);
-            c++;
-            
-            if (retcsim != 0) {
-                printf("FALHA AO CRIAR\n");
-            }
-            tabela_structure.TID[c]=threadsim;
-            tabela_structure.PRONTO[c]=tabela_structure.TID[c];
-            
-            //TID[c]=threadsim;
-            flag=true;
-            //sem_wait(&sem[thread_counter]);
             break;
 
         case 'R':
