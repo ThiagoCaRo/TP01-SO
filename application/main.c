@@ -85,8 +85,8 @@ void *threads(void *arg0){
     printf("Antes do semaphore %d\n",c);
     printf("\n");
     flag=true;
-    sem_wait(&sem[c]);
-    tabela_structure.EXECUCAO=tabela_structure.PRONTO[c];
+    sem_wait(&sem[thread_aux]);
+    tabela_structure.EXECUCAO=tabela_structure.PRONTO[thread_aux];
     cpu_structure.pc=0;
     k=0;
     for(int i=0;i<MAX_MEM;i++){
@@ -105,7 +105,7 @@ void *threads(void *arg0){
             if(fp!=NULL){
                 break;
             }
-        printf("Problema ao abrir o arquivo\n");
+            printf("Problema ao abrir o arquivo\n");
         }
     }
     else{
@@ -225,17 +225,8 @@ void estados(char *buffer){
                 flag=true;
                 sem_wait(&sem[thread_counter-1]);
             }
-            else if(thread_counter!=0 && tabela_structure.PRONTO[thread_counter+1]!=-1){
-                tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.EXECUCAO;
-                tabela_structure.EXECUCAO=tabela_structure.PRONTO[thread_counter+1];
-                thread_counter++;
-                flag=true;
-                sem_wait(&sem[thread_counter-1]);
-            }
-            else{
-                printf("E R R O\n\n\n");
-            }
-            /*else if(thread_counter!=0){
+           
+            else if(thread_counter!=0){
                 if(thread_counter<MAX_MEM-1 && tabela_structure.PRONTO[thread_counter+1]!=-1){
                     tabela_structure.BLOQUEADO[thread_counter]=tabela_structure.EXECUCAO;
                     tabela_structure.EXECUCAO=tabela_structure.PRONTO[thread_counter+1];
