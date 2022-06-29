@@ -55,24 +55,25 @@ Processos duplica_processo(Processos *proc, pid_t novo){
     duplicata.pid = novo;
     duplicata.ppid = proc->pid;
     duplicata.pc = proc->pc;
+    duplicata.prioridade = proc->prioridade;
     duplicata.valor = proc->valor;
     strcpy(duplicata.nome_arquivo, proc->nome_arquivo);
     ler_programa(duplicata.nome_arquivo, duplicata.programa);
     return duplicata;
 }
-Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor, char *nome_arquivo){
+Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor, int prioridade, char *nome_arquivo){
     static Processos processos;
     processos.pid = pid;
     processos.ppid = ppid;
     processos.pc = pc;
     processos.valor = valor;
+    processos.prioridade = prioridade;
     strcpy(processos.nome_arquivo, nome_arquivo);
     ler_programa(processos.nome_arquivo, processos.programa);
     return processos;
 }
 
 void processo_impressao(CPU *cpu, FILA *prontos, FILA *bloqueados, Processos tabela[MAX_MEM]){
-    printf("chegou\n");
     FILE *output;
     int i;
     output = fopen("output.txt", "w");
@@ -92,6 +93,8 @@ void processo_impressao(CPU *cpu, FILA *prontos, FILA *bloqueados, Processos tab
         fprintf(output,"    X[%d] = %d  ",a,cpu->X[a]);
         fflush(output);
     }
+    fprintf(output,"\n    Prioridade: %d",cpu->prioridade);
+    fflush(output);
     fprintf(output,"\n\n");
     fflush(output);
     fprintf(output,"    CONTADOR DE PROGRAMA (PC): %d\n\n",cpu->pc);
@@ -176,8 +179,12 @@ void processo_main(int file_descriptor){
 }
 
 void gerenciador_processos(int file_descriptor){
+
     struct timespec start_r;
     struct timespec end_r;
+    struct timespec pristart_r; //Para o escalonamento com prioridades, ver tabela de tempo em definitions.h
+    struct timespec priend_r;
+
     char rx[MAX_MEM];
     bool flag = false;
     char state, command;
@@ -190,13 +197,13 @@ void gerenciador_processos(int file_descriptor){
     FILA BLOQUEADOS;
 
     read(file_descriptor,rx,sizeof(rx));
-    printf("RX: %s\n\n",rx);
     process_counter, ready_counter = 0;
     cpu.pc = 0;
     cpu.pid = 0;
     cpu.valor = 0;
+    cpu.prioridade = PRIORI_0;
     int deb_a,deb_b=0;
-    tabela[cpu.pid] = criar_processo(process_counter+1, -1, cpu.pc, cpu.valor, "init.txt");
+    tabela[cpu.pid] = criar_processo(process_counter+1, -1, cpu.pc, cpu.valor, cpu.prioridade, "init.txt");
     
 
     //Inicializa as filas
@@ -204,26 +211,26 @@ void gerenciador_processos(int file_descriptor){
         PRONTOS.proc[b].pid = -1;
         PRONTOS.proc[b].ppid = -1;
         PRONTOS.proc[b].valor = 0;
+        PRONTOS.proc[b].prioridade = -1;
         strcpy(PRONTOS.proc[b].nome_arquivo, "");
 
         BLOQUEADOS.proc[b].pid = -1;
         BLOQUEADOS.proc[b].ppid = -1;
         BLOQUEADOS.proc[b].valor = 0;
+        BLOQUEADOS.proc[b].prioridade = -1;
         strcpy(BLOQUEADOS.proc[b].nome_arquivo, "");
     }
 
     cpu.EXEC=cpu.pid;
-    printf("EM EXECUCAO ANTES: %d\n",cpu.EXEC);
     //strcpy(cpu.programa,tabela[cpu.pid].programa)
 
     i = 0;
     j = 0;
     clock_gettime(CLOCK_REALTIME, &start_r);
+    clock_gettime(CLOCK_REALTIME, &end_r);
+    clock_gettime(CLOCK_REALTIME, &pristart_r);
+    clock_gettime(CLOCK_REALTIME, &priend_r);
     while(counter<strlen(rx)){
-        /*if(tabela[cpu.pid].programa[cpu.pc][0] == '\0' && command == 'U'){
-            printf("saiu antes\n");
-            break;
-        }*/
         command = rx[counter];
         if(flag==true){
             flag=false;
@@ -232,17 +239,33 @@ void gerenciador_processos(int file_descriptor){
         switch (command){
             case 'U':
                 state = tabela[cpu.pid].programa[cpu.pc][0];
-                if(time_diff(&start_r, &end_r)*1000>50){ //Se o processo demorar mais que 900ms
-                    flag = true;
-                    state = 'B';
+                if(tabela[cpu.pid].prioridade == PRIORI_0){
+                    if(time_diff(&pristart_r, &priend_r)*1000>10){
+                        tabela[cpu.pid].prioridade++;
+                    }
                 }
+                else if(tabela[cpu.pid].prioridade == PRIORI_1){
+                    if(time_diff(&pristart_r, &priend_r)*1000>15){
+                        tabela[cpu.pid].prioridade++;
+                    }
+                }
+                else if(tabela[cpu.pid].prioridade == PRIORI_2){
+                    if(time_diff(&pristart_r, &priend_r)*1000>25){
+                        tabela[cpu.pid].prioridade++;
+                    }
+                }
+                else if(tabela[cpu.pid].prioridade == PRIORI_3){
+                    if(time_diff(&start_r, &end_r)*1000>50){ //Se o processo demorar mais que 50ms
+                        flag = true;
+                        state = 'B';
+                    }
+                }
+            
                 switch(state){
                     case 'N':
-                        printf("\nN\n");
                         sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
                         break;
                     case 'D':
-                        printf("\nD\n");
                         for(x=0;x<cpu.n;x++){
                             cpu.X[x] = 0;
                         }
@@ -251,28 +274,29 @@ void gerenciador_processos(int file_descriptor){
                         }
                         break;
                     case 'V':
-                        printf("\nV\n");
                         sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
                         cpu.X[cpu.indice] = cpu.valor;
                         break;
                     case 'A':
-                        printf("\nA\n");
                         sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
                         cpu.X[cpu.indice]+=cpu.valor;
                         break;
                     case 'S':
-                        printf("\nS\n");
                         sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
                         cpu.X[cpu.indice]-=cpu.valor;
                         break;
                     case 'B':
-                        printf("\nB\n");
+                        if(tabela[cpu.pid].prioridade != PRIORI_0){
+                            tabela[cpu.pid].prioridade--;
+                        }
                         clock_gettime(CLOCK_REALTIME, &start_r);
+                        clock_gettime(CLOCK_REALTIME, &pristart_r);
                         if(PRONTOS.proc[ready_counter].pid != -1){
                             strcpy(BLOQUEADOS.proc[cpu.pid].nome_arquivo , tabela[cpu.pid].nome_arquivo);
                             BLOQUEADOS.proc[cpu.pid].pc = tabela[cpu.pid].pc;
                             BLOQUEADOS.proc[cpu.pid].pid = tabela[cpu.pid].pid;
                             BLOQUEADOS.proc[cpu.pid].ppid = tabela[cpu.pid].ppid;
+                            BLOQUEADOS.proc[cpu.pid].prioridade = tabela[cpu.pid].prioridade;
                             for(int j=0;j<MAX_MEM;j++){
                                 strcpy(BLOQUEADOS.proc[cpu.pid].programa[j], tabela[cpu.pid].programa[j]);
                                 
@@ -285,19 +309,21 @@ void gerenciador_processos(int file_descriptor){
                             tabela[cpu.pid].pc = PRONTOS.proc[ready_counter].pc;
                             tabela[cpu.pid].pid = PRONTOS.proc[ready_counter].pid;
                             tabela[cpu.pid].ppid = PRONTOS.proc[ready_counter].ppid;
+                            tabela[cpu.pid].prioridade = PRONTOS.proc[ready_counter].prioridade;
                             for(int j=0;j<MAX_MEM;j++){
                                 strcpy(tabela[cpu.pid].programa[j] , PRONTOS.proc[ready_counter].programa[j]);
                                 
                             }
                             tabela[cpu.pid].valor = PRONTOS.proc[ready_counter].valor;
                             cpu.EXEC = tabela[cpu.pid].pid;
+                            cpu.prioridade = tabela[cpu.pid].prioridade;
                             for(x=0; x<MAX_MEM-1;x++){ //Desloca todos os prontos
                                 PRONTOS.proc[x] = PRONTOS.proc[x+1];
                                 if(x==MAX_MEM-2){
                                     strcpy(PRONTOS.proc[MAX_MEM-1].nome_arquivo, "");
                                     PRONTOS.proc[MAX_MEM-1].pc = 0;
-                                    PRONTOS.proc[MAX_MEM-1].pid = 0;
-                                    PRONTOS.proc[MAX_MEM-1].ppid = 0;
+                                    PRONTOS.proc[MAX_MEM-1].pid = -1;
+                                    PRONTOS.proc[MAX_MEM-1].ppid = -1;
                                     for(int j=0;j<MAX_MEM;j++){
                                         for(int k=0;k<MAX_LINHA;k++){
                                             PRONTOS.proc[MAX_MEM-1].programa[j][k] = '\0';
@@ -313,24 +339,25 @@ void gerenciador_processos(int file_descriptor){
                         }
                         break;
                     case 'T':
-                        printf("\nT\n");
                         if(PRONTOS.proc[ready_counter].pid != 0){
                             strcpy(tabela[cpu.pid].nome_arquivo, PRONTOS.proc[ready_counter].nome_arquivo);
                             tabela[cpu.pid].pc = PRONTOS.proc[ready_counter].pc;
                             tabela[cpu.pid].pid = PRONTOS.proc[ready_counter].pid;
                             tabela[cpu.pid].ppid = PRONTOS.proc[ready_counter].ppid;
+                            tabela[cpu.pid].prioridade = PRONTOS.proc[ready_counter].prioridade;
                             for(int j=0;j<MAX_MEM;j++){
                                 strcpy(tabela[cpu.pid].programa[j] , PRONTOS.proc[ready_counter].programa[j]);
                                 
                             }
                             tabela[cpu.pid].valor = PRONTOS.proc[ready_counter].valor;
                             cpu.EXEC = tabela[cpu.pid].pid;
+                            cpu.prioridade = tabela[cpu.pid].prioridade;
                         }
 
                         break;
                     case 'F':
-                        printf("\nF\n");
                         process_counter++;
+                        printf("%d\n",process_counter);
                         transfere_tabela(&cpu, &tabela[cpu.pid]);
                         tabela[process_counter]  = duplica_processo(&tabela[cpu.pid], process_counter);
 
@@ -339,16 +366,48 @@ void gerenciador_processos(int file_descriptor){
                         PRONTOS.proc[process_counter-1].pc = tabela[process_counter].pc;
                         PRONTOS.proc[process_counter-1].pid = tabela[process_counter].pid;
                         PRONTOS.proc[process_counter-1].ppid = tabela[process_counter].ppid;
+                        PRONTOS.proc[process_counter-1].prioridade = tabela[process_counter].prioridade;
                         for(int j=0;j<MAX_MEM;j++){
                             strcpy(PRONTOS.proc[process_counter-1].programa[j], tabela[process_counter].programa[j]);
                             
                         }
                         PRONTOS.proc[process_counter-1].valor = tabela[process_counter].valor;
+
+                        for(x=0; x<MAX_MEM-1;x++){ //Desloca todos os prontos
+                            if(PRONTOS.proc[x].pid==-1){
+                                PRONTOS.proc[x] = PRONTOS.proc[x+1];
+                                strcpy(PRONTOS.proc[x+1].nome_arquivo, "");
+                                PRONTOS.proc[x+1].pc = 0;
+                                PRONTOS.proc[x+1].pid = -1;
+                                PRONTOS.proc[x+1].ppid = -1;
+                                PRONTOS.proc[x+1].prioridade = -1;
+                                for(int j=0;j<MAX_MEM;j++){
+                                    for(int k=0;k<MAX_LINHA;k++){
+                                        PRONTOS.proc[x+1].programa[j][k] = '\0';
+                                    }
+                                }
+                            }
+                            if(x==MAX_MEM-2){
+                                strcpy(PRONTOS.proc[MAX_MEM-1].nome_arquivo, "");
+                                PRONTOS.proc[MAX_MEM-1].pc = 0;
+                                PRONTOS.proc[MAX_MEM-1].pid = -1;
+                                PRONTOS.proc[MAX_MEM-1].ppid = -1;
+                                PRONTOS.proc[MAX_MEM-1].prioridade = -1;
+                                for(int j=0;j<MAX_MEM;j++){
+                                    for(int k=0;k<MAX_LINHA;k++){
+                                        PRONTOS.proc[MAX_MEM-1].programa[j][k] = '\0';
+                                    }
+                                }
+                                
+                                PRONTOS.proc[MAX_MEM-1].valor = 0;
+
+                            }
+                        }
+
                         break;
                     case 'R':
-                        printf("\nR\n");
                         char file_name[MAX_MEM];
-                        scanf("%s",file_name);
+                        strncpy(file_name,&tabela[cpu.pid].programa[cpu.pc][2],MAX_MEM-1);
                         cpu.pc = 0;
                         cpu.valor = 0;
                         strcpy(tabela[cpu.pid].nome_arquivo, file_name);
@@ -357,6 +416,7 @@ void gerenciador_processos(int file_descriptor){
                     case '\0':
                         break;
                 }
+                clock_gettime(CLOCK_REALTIME, &priend_r);
                 clock_gettime(CLOCK_REALTIME, &end_r);
                 cpu.pc++;
                 
@@ -404,6 +464,8 @@ void gerenciador_processos(int file_descriptor){
                 break;
 
             case 'M':
+                printf("Saindo do simulador\n");
+                exit(0);
                 break;
 
             default:
