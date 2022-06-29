@@ -14,17 +14,29 @@
 #define false    0
 #define MAX_MEM    100
 #define MAX_LINHA    50  
-#define PRONTO    'P'
-#define EXECUCAO    'E'
-#define BLOQUEADO    'O'
+#define PRIORI_0    0
+#define PRIORI_1    1
+#define PRIORI_2    2
+#define PRIORI_3    3
+
+/******************************************************************************
+                                TABELA DE TEMPO
+*******************************************************************************/
+
+/*Prioridade 0:|                            10ms                                |
+/*Prioridade 1:|                            15ms                                |
+/*Prioridade 2:|                            25ms                                |
+/*Prioridade 3:|                            50ms    Mesclado com round robin    |
+
+/******************************************************************************
+*******************************************************************************/
 
 typedef struct{
     pid_t pid;
     pid_t ppid;
     int pc;    // Initially started from zero.
     int valor;
-    int t_start;
-    int t_used;
+    int prioridade;
     char nome_arquivo[MAX_MEM]; 
     char programa[MAX_MEM][MAX_LINHA];
 }Processos;
@@ -35,7 +47,7 @@ typedef struct{
     int n;
     pid_t pid;
     int X[MAX_MEM];
-    int indice, valor;
+    int indice, prioridade, valor;
 }CPU;
 
 typedef struct fila{
@@ -47,7 +59,7 @@ void transfere_tabela(CPU *cpu, Processos *proc);
 void transfere_cpu(Processos *proc, CPU *cpu);
 int ler_programa(char *file, char programa[MAX_MEM][MAX_LINHA]);
 Processos duplica_processo(Processos *proc, pid_t novo);
-Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor, char *nome_arquivo);
+Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor,int prioridade, char *nome_arquivo);
 void processo_impressao(CPU *cpu, FILA *prontos, FILA *bloqueados, Processos tabela[MAX_MEM]);
 void processo_main(int file_descriptor);
 void gerenciador_processos(int file_descriptor);
