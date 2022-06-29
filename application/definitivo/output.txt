@@ -1,0 +1,21 @@
+               SAIDA DO SIMULADOR:
+
+
+* Processo atualmente em execucao na CPU:
+
+                PID: 1
+    X[0] = 2110      X[1] = 1475      X[2] = 12      X[3] = 675  
+    Prioridade: 0
+
+    CONTADOR DE PROGRAMA (PC): 1
+
+* Lista de IDs dos processos em estado PRONTO:
+
+   | 2 |            | 3 |            | 4 |         
+PC[0] = 12        PC[1] = 11        PC[2] = 12        
+
+* Lista de IDs dos processos em estado BLOQUEADO:
+
+   | 0 | 
+PC[0] = 12        
+
