@@ -55,11 +55,9 @@ typedef struct fila{
 }FILA;
 
 double time_diff(struct timespec *start, struct timespec *end);
-void transfere_tabela(CPU *cpu, Processos *proc);
-void transfere_cpu(Processos *proc, CPU *cpu);
+
+
 int ler_programa(char *file, char programa[MAX_MEM][MAX_LINHA]);
-Processos duplica_processo(Processos *proc, pid_t novo);
-Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor,int prioridade, char *nome_arquivo);
-void processo_impressao(CPU *cpu, FILA *prontos, FILA *bloqueados, Processos tabela[MAX_MEM]);
+
 void processo_main(int file_descriptor);
 void gerenciador_processos(int file_descriptor);

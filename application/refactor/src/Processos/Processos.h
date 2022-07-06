@@ -1,0 +1,20 @@
+#ifndef __PROCESSOS_H__
+#define __PROCESSOS_H__
+
+#include <unistd.h>
+#include "../Arquivo/Arquivo.h"
+
+typedef struct Processos {
+    pid_t pid;
+    pid_t ppid;
+    int pc;    // Initially started from zero.
+    int valor;
+    int prioridade;
+    char nome_arquivo[MAX_MEM]; 
+    char programa[MAX_MEM][MAX_LINHA];
+} Processos;
+
+Processos duplica_processo(Processos *proc, pid_t novo);
+Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor,int prioridade, char *nome_arquivo);
+
+#endif // __PROCESSOS_H__
