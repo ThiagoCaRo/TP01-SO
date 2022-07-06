@@ -2,6 +2,10 @@
 #include "Fila/Fila.h"
 #include "Processos/Processos.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 /*void transfere_tabela(CPU *cpu, Processos *proc){
     proc->pc = cpu->pc;
     proc->pid = cpu->pid;

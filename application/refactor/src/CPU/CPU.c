@@ -1,6 +1,7 @@
 #include "CPU.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -146,6 +147,7 @@ void gerenciador_processos(int file_descriptor) {
     struct timespec priend_r;
 
     char rx[MAX_MEM];
+    char file_name[MAX_MEM];
     bool flag = false;
     char state, command;
     int i,j,x,y;
@@ -366,8 +368,8 @@ void gerenciador_processos(int file_descriptor) {
 
                         break;
                     case 'R':
-                        char file_name[MAX_MEM];
-                        strncpy(file_name,&tabela[cpu.pid].programa[cpu.pc][2],MAX_MEM-1);
+                        
+                        strncpy(file_name,&tabela[cpu.pid].programa[cpu.pc][2], MAX_MEM - 1);
                         cpu.pc = 0;
                         cpu.valor = 0;
                         strcpy(tabela[cpu.pid].nome_arquivo, file_name);
