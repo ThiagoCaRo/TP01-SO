@@ -1,2 +1,2 @@
 compile: src/main.c src/Arquivo/Arquivo.c src/CPU/CPU.c src/Processos/Processos.c
-	gcc -o TPII_SO src/main.c src/Arquivo/Arquivo.c src/CPU/CPU.c src/Processos/Processos.c -Wall -lm
+	gcc -o TPII_SO src/main.c src/Fila/Fila.c src/Arquivo/Arquivo.c src/CPU/CPU.c src/Processos/Processos.c -Wall -lm

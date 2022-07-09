@@ -3,7 +3,6 @@
 
 #include <unistd.h>
 #include <inttypes.h>
-#include <semaphore.h>
 #include <sys/types.h>
 #include "../Fila/Fila.h"
 #include "../Arquivo/Arquivo.h"
@@ -14,7 +13,6 @@
 #define PRIORI_1    1
 #define PRIORI_2    2
 #define PRIORI_3    3
-#define THREADSTACKSIZE    1024
 
 typedef struct CPU{
     pid_t EXEC;

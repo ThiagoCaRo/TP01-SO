@@ -16,5 +16,6 @@ typedef struct Processos {
 
 Processos duplica_processo(Processos *proc, pid_t novo);
 Processos criar_processo(pid_t pid, pid_t ppid, int pc, int valor,int prioridade, char *nome_arquivo);
+void copiar_proc(Processos *proc, Processos procB);
 
 #endif // __PROCESSOS_H__
