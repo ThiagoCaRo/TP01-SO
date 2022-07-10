@@ -6,87 +6,61 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdbool.h>
-
-double time_diff(struct timespec *start, struct timespec *end) {
-
-    //Função para calcular o tempo decorrido para round robin facilitado
-
-    return (end->tv_sec - start->tv_sec) + 1e-9*(end->tv_nsec - start->tv_nsec);
-}
+#include <math.h>
+#define verde(c) printf("\33[0;32m%c\33[0m",c)
 
 void transfere_tabela(CPU *cpu, Processos *proc) {
     proc->pc = cpu->pc;
-    proc->pid = cpu->pid;
+    proc->pid = cpu->EXEC;
     proc->valor = cpu->valor;
     //proc->t_used = cpu->t_remain;
 }
 
 void transfere_cpu(Processos *proc, CPU *cpu) {
     cpu->pc = proc->pc;
-    cpu->pid = proc->pid;
+    cpu->EXEC = proc->pid;
     cpu->valor = proc->valor;
 }
 
-void processo_impressao(CPU *cpu, Fila *prontos, Fila *bloqueados, Processos tabela[MAX_MEM]) {
-    FILE *output;
-    output = fopen("output.txt", "w");
-    if (output == NULL) {
-        printf("Failure\n");
-        exit(1);
-    }
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos tabela[MAX_MEM]) {
     
-    fprintf(output,"               SAIDA DO SIMULADOR:\n\n\n");
-    fflush(output);
-    fprintf(output,"* Processo atualmente em execucao na CPU:\n\n");
-    fflush(output);
-    fprintf(output,"                PID: %d\n", cpu->EXEC);
+    printf("======================SIMULADOR====================\n\n\n");
+    printf("* Processo atualmente em execucao na CPU:\n\n");
+    printf("                PID: %d\n", cpu->EXEC);
 
     for(int a = 0; a < MAX_MEM; a++) {
         if (cpu->X[a] == 0) break;
 
-        fprintf(output,"    X[%d] = %d  ", a, cpu->X[a]);
-        fflush(output);
+        printf("    X[%d] = %d  ", a, cpu->X[a]);
     }
 
-    fprintf(output,"\n    Prioridade: %d", cpu->prioridade);
-    fflush(output);
-    fprintf(output,"\n\n");
-    fflush(output);
-    fprintf(output,"    CONTADOR DE PROGRAMA (PC): %d\n\n", cpu->pc);
-    fflush(output);
-    fprintf(output, "* Lista de IDs dos processos em estado PRONTO:\n\n");
-    fflush(output);
-    
-    for (int i = 0; i < prontos->finalFila; i++) {
-        fprintf(output, "   | %d |         ", prontos->proc[i].pid);
-        fflush(output);
-    }
-    fprintf(output, "\n");
+    printf("\n    Prioridade: %d", tabela[cpu->EXEC].prioridade);
+    printf("\n\n");
+    printf("    CONTADOR DE PROGRAMA (PC): %d\n\n", cpu->pc);
+	for (int j = 0; j < 4; j++){
+		printf("\n\n* Lista de IDs dos processos em estado PRONTO com prioridade %d:\n\n",j);
 
-    for (int i = 0; i < prontos->finalFila; i++) {
-        fprintf(output, "PC[%d] = %d        ", i, prontos->proc[i].pc);
-        fflush(output);
-    }
+		for (int i = 0; i < prontos[j].finalFila; i++) {
+			printf("   | %d |         ", prontos[j].proc[i].pid);
+		}
+		printf("\n");
 
-    fprintf(output,"\n\n");
-    fflush(output);
-    fprintf(output, "* Lista de IDs dos processos em estado BLOQUEADO:\n\n");
-    fflush(output);
+		for (int i = 0; i < prontos[j].finalFila; i++) {
+			printf("PC[%d] = %d        ", i, prontos[j].proc[i].pc);
+    }
+	}
+    printf("\n\n");
+    printf("* Lista de IDs dos processos em estado BLOQUEADO:\n\n");
     
     for (int i = 0; i < bloqueados->finalFila;i++) {
-        fprintf(output, "   | %d | ", bloqueados->proc[i].pid);
-        //fflush(output);
+        printf("   | %d | ", bloqueados->proc[i].pid);
     }
-    fprintf(output, "\n");
+    printf("\n");
     
     for (int i = 0; i < bloqueados->finalFila;i++) {
-        fprintf(output, "PC[%d] = %d        ",i,bloqueados->proc[i].pc);
-        fflush(output);
+        printf("PC[%d] = %d        ",i,bloqueados->proc[i].pc);
     }
-    fprintf(output,"\n\n");
-    fflush(output);
-
-    fclose(output);
+    printf("\n\n");
     return;
     
 }
@@ -116,174 +90,174 @@ void processo_main(int file_descriptor) {
     
     write(file_descriptor, tx, sizeof(tx));
     fclose(f);
+    printf("\n===========\nMandando via pipe = %s\n===========\n",tx);
     
 }
 
 void gerenciador_processos(int file_descriptor) {
+	char rx[MAX_MEM];
+	char file_name[MAX_MEM];
+	char state; 
+	char command;
+	int tempo = 0;
+	int process_counter = 0;
+	Processos tabela[MAX_MEM];
+	CPU cpu;
+	Fila PRONTOS[4];
+	Fila BLOQUEADOS;
 
-    struct timespec start_r;
-    struct timespec end_r;
-    struct timespec pristart_r; //Para o escalonamento com prioridades, ver tabela de tempo em definitions.h
-    struct timespec priend_r;
+	
+	read(file_descriptor,rx,sizeof(rx));
+	printf("\n===========\nRecebendo via pipe = %s\n===========\n",rx);
+	cpu.pc = 0;
+	cpu.EXEC = 0;
+	cpu.valor = 0;
+	tabela[cpu.EXEC] = criar_processo(0, -1, 0, 0, PRIORI_0, "init.txt");
 
-    char rx[MAX_MEM];
-    char file_name[MAX_MEM];
-    bool flag = false;
-    char state, command;
-    int process_counter = 0;
-    Processos tabela[MAX_MEM];
-    CPU cpu;
-    Fila PRONTOS;
-    Fila BLOQUEADOS;
+	//Inicializa as Filas
+	for (int i = 0; i < 4; i++)
+		cria_fila(&(PRONTOS[i]));
+	cria_fila(&BLOQUEADOS);
 
-    read(file_descriptor,rx,sizeof(rx));
-    cpu.pc = 0;
-    cpu.pid = 0;
-    cpu.valor = 0;
-    cpu.prioridade = PRIORI_0;
-    tabela[cpu.pid] = criar_processo(process_counter+1, -1, cpu.pc, cpu.valor, cpu.prioridade, "init.txt");
-    
-    //Inicializa as Filas
-    cria_fila(&PRONTOS);
-    cria_fila(&BLOQUEADOS);
+	//strcpy(cpu.programa,tabela[cpu.pid].programa)
 
-    cpu.EXEC=cpu.pid;
-    //strcpy(cpu.programa,tabela[cpu.pid].programa)
+	int counter = 0;
+	while (counter<strlen(rx)) {
+		for (int i = 0; i < strlen(rx); i++){
+			if (i != counter) printf("%c",rx[i]);
+			else verde(rx[i]);
+		}
+		printf("\n");
+		transfere_tabela(&cpu, &tabela[cpu.EXEC]);
+		command = rx[counter];
+		switch (command) {
+		    case 'U':
+		    	if (cpu.EXEC != -1) tempo++;
+		    	else {
+				for (int j = 3; j >= 0; j--){
+					if (!isVazia(PRONTOS[j])) {
+						Processos procaux;
+						desinfileira(&(PRONTOS[j]), &procaux);
+						tempo = 1;
+						
+						transfere_cpu(&procaux, &cpu);
+					} 
+				}
+		    	}
+		
+			if (tempo>pow(2,tabela[cpu.EXEC].prioridade)) {
+				if(tabela[cpu.EXEC].prioridade != PRIORI_3) 
+					tabela[cpu.EXEC].prioridade++;
+				enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC]);
+				cpu.EXEC = -1;
+				for (int j = 3; j >= 0; j--){
+					if (!isVazia(PRONTOS[j])) {
+						Processos procaux;
+						desinfileira(&(PRONTOS[j]), &procaux);
+						tempo = 1;
+						
+						transfere_cpu(&procaux, &cpu);
+						break;
+					} 
+				}
+			}
+			
+			state = tabela[cpu.EXEC].programa[cpu.pc][0];
+		    	if (cpu.EXEC != -1){
+				switch(state) {
+				    case 'N':
+					sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
+					break;
+				    case 'D':
+					for(int x=0;x<cpu.n;x++) {
+					    cpu.X[x] = 0;
+					}
+					break;
+				    case 'V':
+					sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
+					cpu.X[cpu.indice] = cpu.valor;
+					break;
+				    case 'A':
+					sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
+					cpu.X[cpu.indice]+=cpu.valor;
+					break;
+				    case 'S':
+					sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
+					cpu.X[cpu.indice]-=cpu.valor;
+					break;
+				    case 'B':
+					if (tabela[cpu.EXEC].prioridade != PRIORI_0) {
+					    tabela[cpu.EXEC].prioridade--;
+					}
+					enfileirar(&BLOQUEADOS, tabela[cpu.EXEC]);
+					cpu.EXEC = -1;
+					tempo = 0;
+					for (int j = 3; j >= 0; j--){
+						if (!isVazia(PRONTOS[j])) {
+							Processos procaux;
+							desinfileira(&(PRONTOS[j]), &procaux);
+							tempo = 1;
+							
+							transfere_cpu(&procaux, &cpu);
+						} 
+					}
+					break;
+				    case 'T':
+					for (int j = 3; j >= 0; j--){
+						if (!isVazia(PRONTOS[j])) {
+							desinfileira(&(PRONTOS[j]), &tabela[cpu.EXEC]);
+						}
+					}
 
-    clock_gettime(CLOCK_REALTIME, &start_r);
-    clock_gettime(CLOCK_REALTIME, &end_r);
-    clock_gettime(CLOCK_REALTIME, &pristart_r);
-    clock_gettime(CLOCK_REALTIME, &priend_r);
-    for (int counter = 0; counter<strlen(rx); counter++) {
-        command = rx[counter];
-        if (flag == true) {
-            flag=false;
-            command = 'L';
-        }
-        switch (command) {
-            case 'U':
-                state = tabela[cpu.pid].programa[cpu.pc][0];
-                if (tabela[cpu.pid].prioridade == PRIORI_0) {
-                    if (time_diff(&pristart_r, &priend_r)*1000>10) {
-                        tabela[cpu.pid].prioridade++;
-                    }
-                }
-                else if (tabela[cpu.pid].prioridade == PRIORI_1) {
-                    if (time_diff(&pristart_r, &priend_r)*1000>15) {
-                        tabela[cpu.pid].prioridade++;
-                    }
-                }
-                else if (tabela[cpu.pid].prioridade == PRIORI_2) {
-                    if (time_diff(&pristart_r, &priend_r)*1000>25) {
-                        tabela[cpu.pid].prioridade++;
-                    }
-                }
-                else if (tabela[cpu.pid].prioridade == PRIORI_3) {
-                    if (time_diff(&start_r, &end_r)*1000>50) { //Se o processo demorar mais que 50ms
-                        flag = true;
-                        state = 'B';
-                    }
-                }
-            
-                switch(state) {
-                    case 'N':
-                        sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
-                        break;
-                    case 'D':
-                        for(int x=0;x<cpu.n;x++) {
-                            cpu.X[x] = 0;
-                        }
-                        break;
-                    case 'V':
-                        sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        cpu.X[cpu.indice] = cpu.valor;
-                        break;
-                    case 'A':
-                        sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        cpu.X[cpu.indice]+=cpu.valor;
-                        break;
-                    case 'S':
-                        sscanf(tabela[cpu.pid].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        cpu.X[cpu.indice]-=cpu.valor;
-                        break;
-                    case 'B':
-                        if (tabela[cpu.pid].prioridade != PRIORI_0) {
-                            tabela[cpu.pid].prioridade--;
-                        }
-                        clock_gettime(CLOCK_REALTIME, &start_r);
-                        clock_gettime(CLOCK_REALTIME, &pristart_r);
-                        if (!isVazia(PRONTOS)) {
-                        	enfileirar(&BLOQUEADOS, tabela[cpu.pid]);
+					break;
+				case 'F':
+					process_counter++;
+					transfere_tabela(&cpu, &tabela[cpu.EXEC]);
+					tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
 
-				cpu.pid++;
+					enfileirar(&(PRONTOS[tabela[process_counter].prioridade]), tabela[process_counter]);
 
-				desinfileira(&PRONTOS, &tabela[cpu.pid]);
-				
-				cpu.EXEC = tabela[cpu.pid].pid;
-				cpu.prioridade = tabela[cpu.pid].prioridade;
+					break;
+				    case 'R':
+					
+					strncpy(file_name,&tabela[cpu.EXEC].programa[cpu.pc][2], MAX_MEM - 1);
+					cpu.pc = 0;
+					cpu.valor = 0;
+					strcpy(tabela[cpu.EXEC].nome_arquivo, file_name);
+					ler_programa(file_name, tabela[cpu.EXEC].programa);
+					tempo = 0;
+					break;
+				    case '\0':
+					break;
+				}
+				cpu.pc++;
+			}
+			break;
+		    case 'L':
 
+			if (isVazia(BLOQUEADOS)) {
+			    break;
+			}
+			
+			Processos procaux;
+			desinfileira(&BLOQUEADOS, &procaux);
+			enfileirar(&(PRONTOS[procaux.prioridade]), procaux);
 
-                        }
-                        break;
-                    case 'T':
-                        if (!isVazia(PRONTOS)) {
-                        	desinfileira(&PRONTOS, &tabela[cpu.pid]);
-				cpu.EXEC = tabela[cpu.pid].pid;
-				cpu.prioridade = tabela[cpu.pid].prioridade;
-                        }
+			break;
+		    case 'I':
+			fflush(stdout);
+			processo_impressao(&cpu, PRONTOS, &BLOQUEADOS,tabela);
+			break;
 
-                        break;
-		case 'F':
-	                process_counter++;
-	                printf("%d\n",process_counter);
-	                transfere_tabela(&cpu, &tabela[cpu.pid]);
-	                tabela[process_counter]  = duplica_processo(&tabela[cpu.pid], process_counter);
+		    case 'M':
+			printf("Saindo do simulador\n");
+			exit(0);
+			break;
 
-			enfileirar(&PRONTOS, tabela[process_counter]);
-
-                        break;
-                    case 'R':
-                        
-                        strncpy(file_name,&tabela[cpu.pid].programa[cpu.pc][2], MAX_MEM - 1);
-                        cpu.pc = 0;
-                        cpu.valor = 0;
-                        strcpy(tabela[cpu.pid].nome_arquivo, file_name);
-                        ler_programa(file_name, tabela[cpu.pid].programa);
-                        break;
-                    case '\0':
-                        break;
-                }
-                clock_gettime(CLOCK_REALTIME, &priend_r);
-                clock_gettime(CLOCK_REALTIME, &end_r);
-                cpu.pc++;
-                
-                break;
-
-            case 'L':
-
-                if (isVazia(BLOQUEADOS)) {
-                    break;
-                }
-                
-                Processos procaux;
-                desinfileira(&BLOQUEADOS, &procaux);
-                enfileirar(&PRONTOS, procaux);
-
-                break;
-            case 'I':
-                fflush(stdout);
-                processo_impressao(&cpu, &PRONTOS, &BLOQUEADOS, tabela);
-                break;
-
-            case 'M':
-                printf("Saindo do simulador\n");
-                exit(0);
-                break;
-
-            default:
-                break;
-            
-        }
-        //cpu.pc++;
-    }
+		    default:
+			break;
+		    
+		}
+		counter++;
+	}
 }

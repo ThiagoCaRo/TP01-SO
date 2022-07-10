@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <inttypes.h>
+#include <semaphore.h>
 #include <sys/types.h>
 #include "../Fila/Fila.h"
 #include "../Arquivo/Arquivo.h"
@@ -18,16 +19,14 @@ typedef struct CPU{
     pid_t EXEC;
     int pc;
     int n;
-    pid_t pid;
     int X[MAX_MEM];
-    int indice, prioridade, valor;
+    int indice, valor;
 } CPU;
 
 void processo_main(int file_descriptor);
 void gerenciador_processos(int file_descriptor);
 void transfere_cpu(Processos *proc, CPU *cpu);
 void transfere_tabela(CPU *cpu, Processos *proc);
-double time_diff(struct timespec *start, struct timespec *end);
-void processo_impressao(CPU *cpu, Fila *prontos, Fila *bloqueados, Processos tabela[MAX_MEM]);
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados, Processos tabela[MAX_MEM]);
 
 #endif // __CPU_H__
