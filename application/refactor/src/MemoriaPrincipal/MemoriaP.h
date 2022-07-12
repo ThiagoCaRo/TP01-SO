@@ -8,3 +8,5 @@ typedef struct{
     int page_frame[MAX_MEM];
 
 }MEMORIA_PRINCIPAL;
+
+void preenche_pagina(int tamanho_pagina);
