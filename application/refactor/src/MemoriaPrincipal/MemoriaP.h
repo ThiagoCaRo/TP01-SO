@@ -15,4 +15,5 @@ typedef struct{
 }MEMORIA_PRINCIPAL;
 
 void inicializa_vazia(MEMORIA_PRINCIPAL *memoriaPrincipal);
-void preenche_pagina(int tamanho_pagina);
+int preenche_pagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, char operador);
+void FirstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina);
