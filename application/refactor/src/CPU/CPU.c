@@ -105,10 +105,12 @@ void gerenciador_processos(int file_descriptor) {
 	CPU cpu;
 	Fila PRONTOS[4];
 	Fila BLOQUEADOS;
+	MEMORIA_PRINCIPAL memoria;
 
 	
 	read(file_descriptor,rx,sizeof(rx));
 	printf("\n===========\nRecebendo via pipe = %s\n===========\n",rx);
+	inicializa_vazia(&memoria);
 	cpu.pc = 0;
 	cpu.EXEC = 0;
 	cpu.valor = 0;
