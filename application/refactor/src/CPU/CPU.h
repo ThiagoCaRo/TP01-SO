@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include "../Fila/Fila.h"
 #include "../Arquivo/Arquivo.h"
+#include "../MemoriaPrincipal/MemoriaP.h"
 
 #define true    1
 #define false    0
