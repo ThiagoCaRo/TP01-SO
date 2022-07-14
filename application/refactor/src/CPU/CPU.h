@@ -9,8 +9,6 @@
 #include "../Arquivo/Arquivo.h"
 #include "../MemoriaPrincipal/MemoriaP.h"
 
-#define true    1
-#define false    0
 #define PRIORI_0    0
 #define PRIORI_1    1
 #define PRIORI_2    2
@@ -28,6 +26,6 @@ void processo_main(int file_descriptor);
 void gerenciador_processos(int file_descriptor);
 void transfere_cpu(Processos *proc, CPU *cpu);
 void transfere_tabela(CPU *cpu, Processos *proc);
-void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados, Processos tabela[MAX_MEM]);
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados, Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria);
 
 #endif // __CPU_H__

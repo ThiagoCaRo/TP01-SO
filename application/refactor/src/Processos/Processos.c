@@ -18,6 +18,8 @@ Processos duplica_processo(Processos *proc, pid_t novo){
 void copiar_proc(Processos *proc, Processos procB){
 	strcpy(proc->nome_arquivo, procB.nome_arquivo);
 	proc->pc = procB.pc;
+    proc->inicialMEM = procB.inicialMEM;
+    proc->tamanho = procB.tamanho;
 	proc->pid = procB.pid;
 	proc->ppid = procB.ppid;
 	proc->prioridade = procB.prioridade;

@@ -8,7 +8,6 @@
 typedef struct{
     int tamanho;
     int index;
-    bool ocupado;
 }frames;
 
 typedef struct{
@@ -19,6 +18,7 @@ typedef struct{
 
 void inicializa_vazia(MEMORIA_PRINCIPAL *memoriaPrincipal);
 int preenche_pagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int index_pageframe, char operador);
-void FirstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina);
+int FirstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina);
+int removePagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int index);
 
 #endif // __MEMORIAP_H__
