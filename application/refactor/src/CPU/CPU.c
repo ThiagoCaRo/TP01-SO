@@ -64,7 +64,7 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
     }
     printf("\n\n");
 
-	for(int i = 0; i < 20; i++){
+	for(int i = 0; i < 50; i++){
 		printf("%d ", memoria.RAM[i]);
 	}
 	printf("\n\n");
@@ -150,7 +150,8 @@ void gerenciador_processos(int file_descriptor) {
 			if (i != counter) printf("%c",rx[i]);
 			else verde(rx[i]);
 		}
-		printf("\n");
+		if (rx[counter] != 'U')
+			printf("\n");
 		transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 		command = rx[counter];
 	
@@ -188,7 +189,7 @@ void gerenciador_processos(int file_descriptor) {
 			
 			state = tabela[cpu.EXEC].programa[cpu.pc][0];
 		    	if (cpu.EXEC != -1){
-				printf("STATE: %c\n\n\n\n\n\n\n", state);
+				printf("  STATE: %c\n", state);
 				switch(state) {
 				    case 'N':
 						if(tabela[cpu.EXEC].inicialMEM != -1){
@@ -207,8 +208,6 @@ void gerenciador_processos(int file_descriptor) {
 
 				    case 'V':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-						printf("INICIAL MEM %d\n\n\n\n\n\n", tabela[cpu.EXEC].inicialMEM );
-						printf("CPU INDICE %d\n\n\n\n\n\n\n",cpu.indice);
 						memoria.RAM[tabela[cpu.EXEC].inicialMEM + cpu.indice] = cpu.valor;
 					break;
 
@@ -287,6 +286,8 @@ void gerenciador_processos(int file_descriptor) {
 				cpu.pc++;
 				
 			}
+			else 
+				printf("\n");
 			break;
 
 		    case 'L':

@@ -7,7 +7,7 @@ Processos duplica_processo(Processos *proc, pid_t novo){
     static Processos duplicata;
     duplicata.pid = novo;
     duplicata.ppid = proc->pid;
-    duplicata.pc = proc->pc;
+    duplicata.pc = proc->pc+1;
     duplicata.prioridade = proc->prioridade;
     duplicata.valor = proc->valor;
     strcpy(duplicata.nome_arquivo, proc->nome_arquivo);
