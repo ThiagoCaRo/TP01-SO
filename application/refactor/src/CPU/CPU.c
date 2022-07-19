@@ -192,14 +192,20 @@ void gerenciador_processos(int file_descriptor) {
 				printf("  STATE: %c\n", state);
 				switch(state) {
 				    case 'N':
+						int auxMem;
 						if(tabela[cpu.EXEC].inicialMEM != -1){
 							removePagina(&memoria, cpu.n, tabela[cpu.EXEC].inicialMEM);
 						}
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
 						
 
-						
-						tabela[cpu.EXEC].inicialMEM = FirstFit(&memoria, cpu.n);
+						auxMem = FirstFit(&memoria, cpu.n);
+						if(auxMem == -1){
+							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC])
+							cpu.EXEC = -1;
+							break;
+						}
+						tabela[cpu.EXEC].inicialMEM = auxMem;
 						tabela[cpu.EXEC].tamanho = cpu.n;
 						
 						
