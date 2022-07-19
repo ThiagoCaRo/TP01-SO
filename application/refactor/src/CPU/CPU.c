@@ -265,10 +265,19 @@ void gerenciador_processos(int file_descriptor) {
 					break;
 
 					case 'F':
+						int auxMemCopy;
 						process_counter++;
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
-						tabela[process_counter].inicialMEM = FirstFit(&memoria, cpu.n);
+						
+						auxMemCopy = FirstFit(&memoria, cpu.n);
+
+						if(auxMemCopy == -1){
+							enfileirar(&(PRONTOS[tabela[process_counter].prioridade]),tabela[process_counter]);
+							break;
+						}
+						
+						tabela[process_counter].inicialMEM = auxMemCopy;
 						tabela[process_counter].tamanho = cpu.n;
 						for(int i=0; i < cpu.n; i++){
 							memoria.RAM[i+tabela[process_counter].inicialMEM] = memoria.RAM[i+tabela[cpu.EXEC].inicialMEM];
