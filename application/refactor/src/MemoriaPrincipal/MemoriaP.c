@@ -4,7 +4,7 @@ void inicializa_vazia(MEMORIA_PRINCIPAL *memoriaPrincipal){
     for(int i=1; i<MAX_MEM; i++){
         memoriaPrincipal->pageframe[i].index = -1;
     }
-    memoriaPrincipal->pageframe[0].tamanho = MAX_MEM;
+    memoriaPrincipal->pageframe[0].tamanho = MAX_RAM;
     memoriaPrincipal->pageframe[0].index = 0;
 
 }

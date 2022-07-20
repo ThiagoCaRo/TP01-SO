@@ -64,7 +64,7 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
     }
     printf("\n\n");
 
-	for(int i = 0; i < 50; i++){
+	for(int i = 0; i < MAX_RAM; i++){
 		printf("%d ", memoria.RAM[i]);
 	}
 	printf("\n\n");
@@ -191,8 +191,9 @@ void gerenciador_processos(int file_descriptor) {
 		    	if (cpu.EXEC != -1){
 				printf("  STATE: %c\n", state);
 				switch(state) {
+					int auxMem, auxMemCopy;
 				    case 'N':
-						int auxMem;
+						
 						if(tabela[cpu.EXEC].inicialMEM != -1){
 							removePagina(&memoria, cpu.n, tabela[cpu.EXEC].inicialMEM);
 						}
@@ -200,8 +201,9 @@ void gerenciador_processos(int file_descriptor) {
 						
 
 						auxMem = FirstFit(&memoria, cpu.n);
+						printf("AUXMEM   %d\n",auxMem);
 						if(auxMem == -1){
-							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC])
+							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC]);
 							cpu.EXEC = -1;
 							break;
 						}
@@ -265,15 +267,15 @@ void gerenciador_processos(int file_descriptor) {
 					break;
 
 					case 'F':
-						int auxMemCopy;
 						process_counter++;
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
 						
 						auxMemCopy = FirstFit(&memoria, cpu.n);
-
 						if(auxMemCopy == -1){
-							enfileirar(&(PRONTOS[tabela[process_counter].prioridade]),tabela[process_counter]);
+							fprintf(stderr, "%s","Memoria principal cheia para processo duplicado\n");
+							exit(1);
+							//enfileirar(&(PRONTOS[tabela[process_counter].prioridade]),tabela[process_counter]);
 							break;
 						}
 						

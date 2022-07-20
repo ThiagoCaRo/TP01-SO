@@ -11,7 +11,7 @@ typedef struct{
 }frames;
 
 typedef struct{
-    int RAM[MAX_MEM];
+    int RAM[MAX_RAM];
     frames pageframe[MAX_MEM];
 
 }MEMORIA_PRINCIPAL;
