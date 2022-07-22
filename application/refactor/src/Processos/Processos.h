@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "../Arquivo/Arquivo.h"
+#include "../Constantes/Constantes.h"
 
 typedef struct Processos {
     pid_t pid;

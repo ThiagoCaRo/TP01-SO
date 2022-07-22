@@ -1,3 +1,4 @@
+#include "Constantes/Constantes.h"
 #include "CPU/CPU.h"
 #include "Fila/Fila.h"
 #include "Processos/Processos.h"

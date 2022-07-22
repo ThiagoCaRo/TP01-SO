@@ -1,9 +1,5 @@
-#ifndef __MEMORIAP_H__
-#define __MEMORIAP_H__
-
-#include "../Fila/Fila.h"
-#define true    1
-#define false    0
+#include <stdbool.h>
+#include "../Constantes/Constantes.h"
 
 typedef struct{
     int tamanho;
@@ -24,5 +20,3 @@ int WorstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina);
 int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina);
 int Fit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, char tipo, int * next);
 int removePagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int index);
-
-#endif // __MEMORIAP_H__

@@ -64,7 +64,7 @@ int NextFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *next){
 int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
     int min = -1;
     for(int i = 0; i<MAX_MEM; i++){
-        if((min == -1 | memoriaPrincipal->pageframe[min].tamanho > memoriaPrincipal->pageframe[i].tamanho) 
+        if(((min == -1) | (memoriaPrincipal->pageframe[min].tamanho > memoriaPrincipal->pageframe[i].tamanho))
             && tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho
             && memoriaPrincipal->pageframe[i].index != -1){
             min = i;
@@ -78,7 +78,7 @@ int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
 int WorstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
     int max = -1;
     for(int i = 0; i<MAX_MEM; i++){
-        if((max == -1 | memoriaPrincipal->pageframe[max].tamanho < memoriaPrincipal->pageframe[i].tamanho) 
+        if(((max == -1) | (memoriaPrincipal->pageframe[max].tamanho < memoriaPrincipal->pageframe[i].tamanho))
             && tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho
             && memoriaPrincipal->pageframe[i].index != -1){
             max = i;
@@ -111,53 +111,50 @@ int removePagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int in
                 }
                 break;
         }
+        if(memoriaPrincipal->pageframe[i].index + memoriaPrincipal->pageframe[i].tamanho == index){
+            memoriaPrincipal->pageframe[i].tamanho += tamanho_pagina;
+            break;
+        }
+        if(memoriaPrincipal->pageframe[i+1].index == index + tamanho_pagina){
+            memoriaPrincipal->pageframe[i+1].index-=tamanho_pagina;
+            memoriaPrincipal->pageframe[i+1].tamanho+=tamanho_pagina;
+            break;
+        }
+        if (memoriaPrincipal->pageframe[i].index == index + tamanho_pagina && i == 0){
+            memoriaPrincipal->pageframe[i].index-=tamanho_pagina;
+            memoriaPrincipal->pageframe[i].tamanho+=tamanho_pagina;
+            break;
+        }
+        if ((memoriaPrincipal->pageframe[i].index + memoriaPrincipal->pageframe[i].tamanho < index &&
+                (memoriaPrincipal->pageframe[i+1].index > index + tamanho_pagina || memoriaPrincipal->pageframe[i+1].index == -1)) ||
+                (memoriaPrincipal->pageframe[i].index > index && memoriaPrincipal->pageframe[i+1].index == -1)){
 
-        else{
-            if(memoriaPrincipal->pageframe[i].index + memoriaPrincipal->pageframe[i].tamanho == index){
-                memoriaPrincipal->pageframe[i].tamanho += tamanho_pagina;
-                break;
-            }
-            else if(memoriaPrincipal->pageframe[i+1].index == index + tamanho_pagina){
-                memoriaPrincipal->pageframe[i+1].index-=tamanho_pagina;
-                memoriaPrincipal->pageframe[i+1].tamanho+=tamanho_pagina;
-                break;
-            } else if (memoriaPrincipal->pageframe[i].index == index + tamanho_pagina && i == 0){
-                memoriaPrincipal->pageframe[i].index-=tamanho_pagina;
-                memoriaPrincipal->pageframe[i].tamanho+=tamanho_pagina;
-                break;
-            }
-            else if ((memoriaPrincipal->pageframe[i].index + memoriaPrincipal->pageframe[i].tamanho < index && 
-            		(memoriaPrincipal->pageframe[i+1].index > index + tamanho_pagina || memoriaPrincipal->pageframe[i+1].index == -1)) || 
-            		(memoriaPrincipal->pageframe[i].index > index && memoriaPrincipal->pageframe[i+1].index == -1)){
-            		
-                frames pagina;
-                pagina.index = index;
-                pagina.tamanho = tamanho_pagina;
-                bool flag = true;
-                for(int j = MAX_MEM-2; j >= 0; j--){
-                    if(memoriaPrincipal->pageframe[j].index > pagina.index){
-                    
-                        memoriaPrincipal->pageframe[j+1] = memoriaPrincipal->pageframe[j];
+            frames pagina;
+            pagina.index = index;
+            pagina.tamanho = tamanho_pagina;
+            bool flag = true;
+            for(int j = MAX_MEM-2; j >= 0; j--){
+                if(memoriaPrincipal->pageframe[j].index > pagina.index){
 
-                    }
-                    else{
-                        if(flag && memoriaPrincipal->pageframe[j].index != -1){
-                            flag = false;
-                            memoriaPrincipal->pageframe[j+1] = pagina;
-                            break;
-                        }
-                        
-                    }
+                    memoriaPrincipal->pageframe[j+1] = memoriaPrincipal->pageframe[j];
+
                 }
-                if(flag){
-                    memoriaPrincipal->pageframe[0] = pagina;
-                }
-                break;
+                else{
+                    if(flag && memoriaPrincipal->pageframe[j].index != -1){
+                        flag = false;
+                        memoriaPrincipal->pageframe[j+1] = pagina;
+                        break;
+                    }
 
+                }
             }
+            if(flag){
+                memoriaPrincipal->pageframe[0] = pagina;
+            }
+            break;
 
         }
-        
+
     }
     for(int i = index; i < index + tamanho_pagina; i++){
         memoriaPrincipal->RAM[i] = 0;

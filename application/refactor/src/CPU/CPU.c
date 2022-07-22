@@ -1,4 +1,5 @@
 #include "CPU.h"
+#include "../Arquivo/Arquivo.h"
 
 #include <string.h>
 #include <signal.h>
@@ -6,14 +7,12 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <math.h>
-#define verde(c) printf("\33[0;32m%c\33[0m",c)
+#define verde(c) printf("\33[0;%dm%c\33[0m",32,c)
 
 void transfere_tabela(CPU *cpu, Processos *proc) {
     proc->pc = cpu->pc;
     proc->pid = cpu->EXEC;
     proc->valor = cpu->valor;
-	//proc->inicialMEM = cpu->indice;
-    //proc->t_used = cpu->t_remain;
 }
 
 void transfere_cpu(Processos *proc, CPU *cpu) {
@@ -28,7 +27,7 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
     
     printf("======================SIMULADOR====================\n\n\n");
     printf("* Processo atualmente em execucao na CPU:\n\n");
-    printf("                PID: %d\n", cpu->EXEC);
+    printf("                PID: \33[0;%dm%d\33[0m\n", cpu->EXEC+33, cpu->EXEC);
 
     for(int a = 0; a < MAX_MEM; a++) {
         if (cpu->X[a] == 0) break;
@@ -36,14 +35,16 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
         printf("    X[%d] = %d  ", a, cpu->X[a]);
     }
 
-    printf("\n    Prioridade: %d", tabela[cpu->EXEC].prioridade);
-    printf("\n\n");
-    printf("    CONTADOR DE PROGRAMA (PC): %d\n\n", cpu->pc);
+    if (cpu->EXEC != -1){
+        printf("\n    Prioridade: %d", tabela[cpu->EXEC].prioridade);
+        printf("\n\n");
+        printf("    CONTADOR DE PROGRAMA (PC): %d\n\n", cpu->pc);
+    }
 	for (int j = 0; j < 4; j++){
 		printf("\n\n* Lista de IDs dos processos em estado PRONTO com prioridade %d:\n\n",j);
 
 		for (int i = 0; i < prontos[j].finalFila; i++) {
-			printf("   | %d |         ", prontos[j].proc[i].pid);
+			printf("   | \33[0;%dm%d\33[0m |         ", 33+prontos[j].proc[i].pid,prontos[j].proc[i].pid);
 		}
 		printf("\n");
 
@@ -64,8 +65,19 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
     }
     printf("\n\n");
 
+    printf("Memoria principal:\n");
 	for(int i = 0; i < MAX_RAM; i++){
-		printf("%d ", memoria.RAM[i]);
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++){
+            if (tabela[j].inicialMEM + tabela[j].tamanho > i && tabela[j].inicialMEM <= i){
+                process = j;
+                break;
+            }
+        }
+        if (process == -1) printf("%d ", memoria.RAM[i]);
+        else {
+            printf("\33[0;%dm%d\33[0m ",33+process,memoria.RAM[i]);
+        }
 	}
 	printf("\n\n");
 	for(int i = 0; i < MAX_MEM; i++){
@@ -74,12 +86,6 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
 		}
 	}
 	printf("\n\n");
-
-
-
-
-    return;
-    
 }
 
 void processo_main(int file_descriptor) {

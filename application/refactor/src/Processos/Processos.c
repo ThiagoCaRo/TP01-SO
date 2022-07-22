@@ -1,5 +1,5 @@
 #include "Processos.h"
-
+#include "../Arquivo/Arquivo.h"
 #include <stdio.h>
 #include <string.h>
 
