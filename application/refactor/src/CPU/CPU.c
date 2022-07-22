@@ -127,6 +127,13 @@ void gerenciador_processos(int file_descriptor) {
 	
 	read(file_descriptor,rx,sizeof(rx));
 	printf("\n===========\nRecebendo via pipe = %s\n===========\n",rx);
+	
+	char tipoFit;
+	
+	printf("Escolha o tipo de técnica para alocar memória:\nf: First fit\nn: Next fit\nb: Best fit\nw: Worst fit\n");
+	scanf(" %c",&tipoFit);
+	int next = 0;
+	
 	inicializa_vazia(&memoria);
 	cpu.pc = 0;
 	cpu.EXEC = 0;
@@ -200,8 +207,7 @@ void gerenciador_processos(int file_descriptor) {
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
 						
 
-						auxMem = FirstFit(&memoria, cpu.n);
-						printf("AUXMEM   %d\n",auxMem);
+						auxMem = Fit(&memoria, cpu.n,tipoFit,&next);
 						if(auxMem == -1){
 							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC]);
 							cpu.EXEC = -1;
@@ -271,7 +277,7 @@ void gerenciador_processos(int file_descriptor) {
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
 						
-						auxMemCopy = FirstFit(&memoria, cpu.n);
+						auxMemCopy = Fit(&memoria, cpu.n,tipoFit, &next);
 						if(auxMemCopy == -1){
 							fprintf(stderr, "%s","Memoria principal cheia para processo duplicado\n");
 							exit(1);
