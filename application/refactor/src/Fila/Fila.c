@@ -4,19 +4,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-int cria_fila(Fila* fila){
+int cria_fila(Fila* fila){ // cria fila vazia
 	fila->finalFila = 0;
 	return 0;
 }
 
 int enfileirar(Fila* fila, Processos proc){
-	copiar_proc(&(fila->proc[fila->finalFila]), proc);
+	copiar_proc(&(fila->proc[fila->finalFila]), proc);// copia do processo para dentro da fila
 	fila->finalFila++;
 	return 0;
 }
 
 int desinfileira(Fila* fila, Processos* proc){
-	copiar_proc(proc, fila->proc[0]);
+	copiar_proc(proc, fila->proc[0]); // copia da primeira posicao da fila para algum processo
 	for(int x=0; x<fila->finalFila-1;x++) { //Desloca todos os prontos
 		copiar_proc(&(fila->proc[x]), fila->proc[x+1]);
 	}
