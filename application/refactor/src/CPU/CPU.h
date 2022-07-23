@@ -9,17 +9,19 @@
 #include "../Constantes/Constantes.h"
 #include "../MemoriaPrincipal/MemoriaP.h"
 
+
+// define as prioridades possiveis para a fila
 #define PRIORI_0    0
 #define PRIORI_1    1
 #define PRIORI_2    2
 #define PRIORI_3    3
 
 typedef struct CPU{
-    pid_t EXEC;
-    int pc;
-    int n;
-    int X[MAX_MEM];
-    int indice, valor;
+    pid_t EXEC; // processo atualmente em execucao
+    int pc; // linha de comando que esta executando
+    int n; // tamanho do programa em execucao
+    int X[MAX_MEM]; // sistema antigo de memoria(nao usado)
+    int indice, valor; // variaveis auxiliares para a manipulacao dos valores a serem computados
 } CPU;
 
 void processo_main(int file_descriptor);
