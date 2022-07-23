@@ -6,17 +6,17 @@
 #include "../Memoria/Memoria.h"
 
 typedef struct{
-    bool naPrincipal;
-    int index;
-    int ultimoAcesso;
+    bool naPrincipal; // booleano que determina se esta ou nao na memoria principal
+    int index; // endereco na memoria(disco ou ram), caso em nenhum lugar o index é igual a -1
+    int ultimoAcesso; // contador do ultimo acesso
 } celulas;
 
 typedef struct{
-    celulas VIR[MAX_VIR];
-    MEMORIA disco;
-    MEMORIA memoriaPrincipal;
-    frames pageframe[MAX_MEM];
-    int acessos;
+    celulas VIR[MAX_VIR]; // celulas de enderecamento virtual
+    MEMORIA disco; // disco
+    MEMORIA memoriaPrincipal; // memoria principal
+    frames pageframe[MAX_MEM]; // vaos na memoria
+    int acessos; // contador de acessos
 }MEMORIA_VIRTUAL;
 
 void inicializa_vaziaV(MEMORIA_VIRTUAL *memoriaVirtual);
