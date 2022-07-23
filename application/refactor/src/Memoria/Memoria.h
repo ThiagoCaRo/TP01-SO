@@ -9,7 +9,7 @@ typedef struct{
 typedef struct{
     int variaveis[MAX_MEM];
     frames pageframe[MAX_MEM];
-}MEMORIA;
+}MEMORIA; // agora a estrutura é memoria, servindo tanto para o disco quanto para a memoria principal
 
 void inicializa_vazia(MEMORIA *memoria, int tamanho);
 int preenche_pagina(MEMORIA *memoria, int tamanho_pagina, int index_pageframe);
