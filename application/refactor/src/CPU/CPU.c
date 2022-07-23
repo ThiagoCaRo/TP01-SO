@@ -250,7 +250,7 @@ void gerenciador_processos(int file_descriptor) {
 	CPU cpu;
 	Fila PRONTOS[4];
 	Fila BLOQUEADOS;
-    MEMORIA_VIRTUAL memoriaVirtual;
+    MEMORIA_VIRTUAL memoriaVirtual; // agora usando memoria virtual
 
 	
 	read(file_descriptor,rx,sizeof(rx));
@@ -262,7 +262,7 @@ void gerenciador_processos(int file_descriptor) {
 	scanf(" %c",&tipoFit);
 	int next = 0;
 	
-	inicializa_vaziaV(&memoriaVirtual);
+	inicializa_vaziaV(&memoriaVirtual); // inicializa a memoria virtual vazia
 	cpu.pc = 0;
 	cpu.EXEC = 0;
 	cpu.valor = 0;
@@ -329,11 +329,11 @@ void gerenciador_processos(int file_descriptor) {
 				    case 'N':
 						
 						if(tabela[cpu.EXEC].inicialMEM != -1){
-							removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM);
+							removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM); // agora remove a pagina virtual
 						}
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
 
-						tabela[cpu.EXEC].inicialMEM = FitV(&memoriaVirtual, cpu.n);
+						tabela[cpu.EXEC].inicialMEM = FitV(&memoriaVirtual, cpu.n); // obtem seu endereco virtual
 						tabela[cpu.EXEC].tamanho = cpu.n;
 						
 						
@@ -341,18 +341,18 @@ void gerenciador_processos(int file_descriptor) {
 
 				    case 'V':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) = cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) = cpu.valor; // acessa o ponteiro de memoria da sua variavel e faz ela receber seu valor
 					break;
 
 				    case 'A':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) += cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) += cpu.valor; // acessa o poteniro de memoria da sua variavel e soma um valor
 						//cpu.X[cpu.indice]+=cpu.valor;
 					break;
 
 				    case 'S':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) -= cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) -= cpu.valor; // acessa o ponteiro da memoria da sua variavel e subtrai um valor
 						//cpu.X[cpu.indice]-=cpu.valor;
 					break;
 
@@ -376,7 +376,7 @@ void gerenciador_processos(int file_descriptor) {
 					break;
 
 				    case 'T':
-                        removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM);
+                        removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM); // remove a pagina virtual
 						cpu.EXEC = -1;
 						for (int j = 3; j >= 0; j--){
 							if (!isVazia(PRONTOS[j])) {
@@ -397,9 +397,9 @@ void gerenciador_processos(int file_descriptor) {
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
 						
-						tabela[process_counter].inicialMEM = FitV(&memoriaVirtual, cpu.n);
+						tabela[process_counter].inicialMEM = FitV(&memoriaVirtual, cpu.n); // coloca o processo duplicado na memoria virtual
 						tabela[process_counter].tamanho = cpu.n;
-						for(int i=0; i < cpu.n; i++){
+						for(int i=0; i < cpu.n; i++){ // acessa variavel por variavel do processo antigo e coloca no novo
                             *GetAccess(&memoriaVirtual,i+tabela[process_counter].inicialMEM,tipoFit,&next) =
                                     *GetAccess(&memoriaVirtual,i+tabela[cpu.EXEC].inicialMEM,tipoFit,&next);
 						}
