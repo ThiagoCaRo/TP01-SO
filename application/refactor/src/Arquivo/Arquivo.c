@@ -12,7 +12,7 @@ int ler_programa(char *file, char programa[MAX_MEM][MAX_LINHA]) {
     if (fp == NULL)
         exit(1);
 
-    for(int x = 0; x < MAX_LINHA; x++) {
+    for(int x = 0; x < MAX_LINHA; x++) { //preenche toda a matriz com \0
         for(int y = 0; y < MAX_MEM; y++) {
             programa[x][y] = '\0';
         }
@@ -23,8 +23,8 @@ int ler_programa(char *file, char programa[MAX_MEM][MAX_LINHA]) {
             //printf("VERIFY 0");
             break;
         }
-        buffer[strcspn(buffer, "\n")] = 0;
-        strcpy(programa[i],buffer);
+        buffer[strcspn(buffer, "\n")] = 0; //posição que encontrar \n é esvaziada
+        strcpy(programa[i],buffer); //copia conteúdo do buffer para cada linha da matriz de programa
         i++;
     }
     fclose(fp);
