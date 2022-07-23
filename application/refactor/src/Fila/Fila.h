@@ -4,8 +4,8 @@
 #include "../Processos/Processos.h"
 
 typedef struct Fila {
-    Processos proc[MAX_MEM];
-    int finalFila;
+    Processos proc[MAX_MEM]; // vetor onde serao armazenados os processos
+    int finalFila; // marcador de fim da fila
 } Fila;
 
 int enfileirar(Fila* fila, Processos proc);
