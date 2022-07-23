@@ -23,7 +23,7 @@ void transfere_cpu(Processos *proc, CPU *cpu) {
 	cpu->indice = proc->inicialMEM;
 }
 
-void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria) {
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos tabela[MAX_MEM], MEMORIA_VIRTUAL memoriaVirtual) {
     
     printf("======================SIMULADOR====================\n\n\n");
     printf("* Processo atualmente em execucao na CPU:\n\n");
@@ -56,7 +56,7 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
     printf("* Lista de IDs dos processos em estado BLOQUEADO:\n\n");
     
     for (int i = 0; i < bloqueados->finalFila;i++) {
-        printf("   | %d | ", bloqueados->proc[i].pid);
+        printf("   | \33[0;%dm%d\33[0m |         ", 33+bloqueados->proc[i].pid,bloqueados->proc[i].pid);
     }
     printf("\n");
     
@@ -69,23 +69,145 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
 	for(int i = 0; i < MAX_RAM; i++){
         int process = -1;
         for (int j = 0; j < MAX_MEM; j++){
+            if (tabela[j].inicialMEM != -1){
+                for (int k = tabela[j].inicialMEM; k < tabela[j].tamanho + tabela[j].inicialMEM; k++) {
+                    if (memoriaVirtual.VIR[k].index == i &&
+                        memoriaVirtual.VIR[k].naPrincipal == 1) {
+                        process = j;
+                        break;
+                    }
+                }
+            }
+        }
+        if (process == -1) printf("%d ", memoriaVirtual.memoriaPrincipal.variaveis[i]);
+        else {
+            printf("\33[0;%dm%d\33[0m ",33+process,memoriaVirtual.memoriaPrincipal.variaveis[i]);
+        }
+	}
+	printf("\n\n");
+
+    for(int i = 0; i < MAX_MEM; i++){
+        if(memoriaVirtual.memoriaPrincipal.pageframe[i].index != -1){
+            printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoriaVirtual.memoriaPrincipal.pageframe[i].tamanho,memoriaVirtual.memoriaPrincipal.pageframe[i].index);
+        }
+    }
+    printf("\n\n");
+
+    printf("Memoria Secundaria:\n");
+    for(int i = 0; i < MAX_DISC; i++){
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++){
+            if (tabela[j].inicialMEM != -1){
+                for (int k = tabela[j].inicialMEM; k < tabela[j].tamanho + tabela[j].inicialMEM; k++) {
+                    if (memoriaVirtual.VIR[k].index == i &&
+                        memoriaVirtual.VIR[k].naPrincipal == 0) {
+                        process = j;
+                        break;
+                    }
+                }
+            }
+        }
+        if (process == -1) printf("%d ", memoriaVirtual.disco.variaveis[i]);
+        else {
+            printf("\33[0;%dm%d\33[0m ",33+process,memoriaVirtual.disco.variaveis[i]);
+        }
+    }
+    printf("\n\n");
+
+    for(int i = 0; i < MAX_MEM; i++){
+        if(memoriaVirtual.disco.pageframe[i].index != -1){
+            printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoriaVirtual.disco.pageframe[i].tamanho,memoriaVirtual.disco.pageframe[i].index);
+        }
+    }
+    printf("\n\n");
+
+    printf("Memoria virtual:\n");
+    printf("Contador de acesso: %d\n", memoriaVirtual.acessos);
+    printf("Valores     |");
+    for(int i = 0; i < MAX_VIR; i++){
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++){
             if (tabela[j].inicialMEM + tabela[j].tamanho > i && tabela[j].inicialMEM <= i){
                 process = j;
                 break;
             }
         }
-        if (process == -1) printf("%d ", memoria.RAM[i]);
+
+        if (process == -1) printf("X|");
         else {
-            printf("\33[0;%dm%d\33[0m ",33+process,memoria.RAM[i]);
+            if(memoriaVirtual.VIR[i].index != -1){
+                if (memoriaVirtual.VIR[i].naPrincipal)
+                    printf("\33[0;%dm%4d\33[0m|",33+process,memoriaVirtual.memoriaPrincipal.variaveis[memoriaVirtual.VIR[i].index]);
+                if (!memoriaVirtual.VIR[i].naPrincipal)
+                    printf("\33[0;%dm%4d\33[0m|",33+process,memoriaVirtual.disco.variaveis[memoriaVirtual.VIR[i].index]);
+                    //printf("\33[0;%dm%d\33[0m ",33+process,memoriaVirtual.memoriaPrincipal.variaveis[memoriaVirtual.VIR[i].index]);
+            }
+            else
+                printf("\33[0;%dm%4d\33[0m|",33+process,0);
         }
-	}
-	printf("\n\n");
-	for(int i = 0; i < MAX_MEM; i++){
-		if(memoria.pageframe[i].index != -1){
-			printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoria.pageframe[i].tamanho,memoria.pageframe[i].index);
-		}
-	}
-	printf("\n\n");
+    }
+    printf("\nEndereco    |");
+    for(int i = 0; i < MAX_VIR; i++){
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++){
+            if (tabela[j].inicialMEM + tabela[j].tamanho > i && tabela[j].inicialMEM <= i){
+                process = j;
+                break;
+            }
+        }
+
+        if (process == -1) printf("X|");
+        else {
+            if(memoriaVirtual.VIR[i].index != -1)
+                printf("\33[0;%dm%4d\33[0m|",33+process,memoriaVirtual.VIR[i].index);
+            else
+                printf("\33[0;%dmXXXX\33[0m|",33+process);
+        }
+    }
+    printf("\nNaPrincipal |");
+    for(int i = 0; i < MAX_VIR; i++) {
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++) {
+            if (tabela[j].inicialMEM + tabela[j].tamanho > i && tabela[j].inicialMEM <= i) {
+                process = j;
+                break;
+            }
+        }
+
+        if (process == -1) printf("X|");
+        else {
+            if (memoriaVirtual.VIR[i].index != -1) {
+                printf("\33[0;%dm%4d\33[0m|", 33 + process, memoriaVirtual.VIR[i].naPrincipal);
+            }else
+                printf("\33[0;%dmXXXX\33[0m|",33+process);
+        }
+    }
+    printf("\nUltimoAcesso|");
+    for(int i = 0; i < MAX_VIR; i++) {
+        int process = -1;
+        for (int j = 0; j < MAX_MEM; j++) {
+            if (tabela[j].inicialMEM + tabela[j].tamanho > i && tabela[j].inicialMEM <= i) {
+                process = j;
+                break;
+            }
+        }
+
+        if (process == -1) printf("X|");
+        else {
+            if (memoriaVirtual.VIR[i].index != -1) {
+                printf("\33[0;%dm%4d\33[0m|", 33 + process, memoriaVirtual.VIR[i].ultimoAcesso);
+            }else
+                printf("\33[0;%dmXXXX\33[0m|",33+process);
+        }
+    }
+    printf("\n\n");
+
+    for(int i = 0; i < MAX_MEM; i++){
+        if(memoriaVirtual.pageframe[i].index != -1){
+            printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoriaVirtual.pageframe[i].tamanho,memoriaVirtual.pageframe[i].index);
+        }
+    }
+    printf("\n\n");
 }
 
 void processo_main(int file_descriptor) {
@@ -128,7 +250,7 @@ void gerenciador_processos(int file_descriptor) {
 	CPU cpu;
 	Fila PRONTOS[4];
 	Fila BLOQUEADOS;
-	MEMORIA_PRINCIPAL memoria;
+    MEMORIA_VIRTUAL memoriaVirtual;
 
 	
 	read(file_descriptor,rx,sizeof(rx));
@@ -140,7 +262,7 @@ void gerenciador_processos(int file_descriptor) {
 	scanf(" %c",&tipoFit);
 	int next = 0;
 	
-	inicializa_vazia(&memoria);
+	inicializa_vaziaV(&memoriaVirtual);
 	cpu.pc = 0;
 	cpu.EXEC = 0;
 	cpu.valor = 0;
@@ -204,42 +326,33 @@ void gerenciador_processos(int file_descriptor) {
 		    	if (cpu.EXEC != -1){
 				printf("  STATE: %c\n", state);
 				switch(state) {
-					int auxMem, auxMemCopy;
 				    case 'N':
 						
 						if(tabela[cpu.EXEC].inicialMEM != -1){
-							removePagina(&memoria, cpu.n, tabela[cpu.EXEC].inicialMEM);
+							removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM);
 						}
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n);
-						
 
-						auxMem = Fit(&memoria, cpu.n,tipoFit,&next);
-						if(auxMem == -1){
-							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC]);
-							cpu.EXEC = -1;
-							break;
-						}
-						tabela[cpu.EXEC].inicialMEM = auxMem;
+						tabela[cpu.EXEC].inicialMEM = FitV(&memoriaVirtual, cpu.n);
 						tabela[cpu.EXEC].tamanho = cpu.n;
 						
 						
 					break;
 
-
 				    case 'V':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-						memoria.RAM[tabela[cpu.EXEC].inicialMEM + cpu.indice] = cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) = cpu.valor;
 					break;
 
 				    case 'A':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-						memoria.RAM[tabela[cpu.EXEC].inicialMEM + cpu.indice]+=cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) += cpu.valor;
 						//cpu.X[cpu.indice]+=cpu.valor;
 					break;
 
 				    case 'S':
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d%*[^0123456789]%d",&cpu.indice, &cpu.valor);
-						memoria.RAM[tabela[cpu.EXEC].inicialMEM + cpu.indice]-=cpu.valor;
+                        *GetAccess(&memoriaVirtual,tabela[cpu.EXEC].inicialMEM + cpu.indice,tipoFit,&next) -= cpu.valor;
 						//cpu.X[cpu.indice]-=cpu.valor;
 					break;
 
@@ -247,6 +360,7 @@ void gerenciador_processos(int file_descriptor) {
 						if (tabela[cpu.EXEC].prioridade != PRIORI_0) {
 							tabela[cpu.EXEC].prioridade--;
 						}
+                        cpu.pc++;
 						enfileirar(&BLOQUEADOS, tabela[cpu.EXEC]);
 						cpu.EXEC = -1;
 						tempo = 0;
@@ -254,15 +368,15 @@ void gerenciador_processos(int file_descriptor) {
 							if (!isVazia(PRONTOS[j])) {
 								Processos procaux;
 								desinfileira(&(PRONTOS[j]), &procaux);
-								tempo = 1;
-								
 								transfere_cpu(&procaux, &cpu);
+                                cpu.pc--;
+                                break;
 							} 
 						}
 					break;
 
 				    case 'T':
-						removePagina(&memoria, cpu.n, tabela[cpu.EXEC].inicialMEM);
+                        removePaginaV(&memoriaVirtual, cpu.n, tabela[cpu.EXEC].inicialMEM);
 						cpu.EXEC = -1;
 						for (int j = 3; j >= 0; j--){
 							if (!isVazia(PRONTOS[j])) {
@@ -283,18 +397,11 @@ void gerenciador_processos(int file_descriptor) {
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter);
 						
-						auxMemCopy = Fit(&memoria, cpu.n,tipoFit, &next);
-						if(auxMemCopy == -1){
-							fprintf(stderr, "%s","Memoria principal cheia para processo duplicado\n");
-							exit(1);
-							//enfileirar(&(PRONTOS[tabela[process_counter].prioridade]),tabela[process_counter]);
-							break;
-						}
-						
-						tabela[process_counter].inicialMEM = auxMemCopy;
+						tabela[process_counter].inicialMEM = FitV(&memoriaVirtual, cpu.n);
 						tabela[process_counter].tamanho = cpu.n;
 						for(int i=0; i < cpu.n; i++){
-							memoria.RAM[i+tabela[process_counter].inicialMEM] = memoria.RAM[i+tabela[cpu.EXEC].inicialMEM];
+                            *GetAccess(&memoriaVirtual,i+tabela[process_counter].inicialMEM,tipoFit,&next) =
+                                    *GetAccess(&memoriaVirtual,i+tabela[cpu.EXEC].inicialMEM,tipoFit,&next);
 						}
 						enfileirar(&(PRONTOS[tabela[process_counter].prioridade]), tabela[process_counter]);
 
@@ -333,7 +440,7 @@ void gerenciador_processos(int file_descriptor) {
 
 		    case 'I':
 				fflush(stdout);
-				processo_impressao(&cpu, PRONTOS, &BLOQUEADOS,tabela, memoria);
+				processo_impressao(&cpu, PRONTOS, &BLOQUEADOS,tabela, memoriaVirtual);
 			break;
 
 		    case 'M':
