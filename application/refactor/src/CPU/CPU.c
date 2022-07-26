@@ -23,8 +23,8 @@ void transfere_cpu(Processos *proc, CPU *cpu) { // coloca um determinado process
 	cpu->indice = proc->inicialMEM;
 }
 
-void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria) {
-    
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria,
+                        int contador_vaos, int contador_tempo, int contador_nos, int contador_alocacoes, int alocacao_negada) {
     printf("======================SIMULADOR====================\n\n\n");
     printf("* Processo atualmente em execucao na CPU:\n\n");
     printf("                PID: \33[0;%dm%d\33[0m\n", cpu->EXEC+33, cpu->EXEC);
@@ -80,11 +80,18 @@ void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados,Processos ta
         }
 	}
 	printf("\n\n");
-	for(int i = 0; i < MAX_MEM; i++){
-		if(memoria.pageframe[i].index != -1){
-			printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoria.pageframe[i].tamanho,memoria.pageframe[i].index);
-		}
-	}
+
+    for(int i = 0; i < MAX_MEM; i++){
+
+        if(memoria.pageframe[i].index != -1){
+            printf("I: %d  TAMANHO DO VÃO %d   INDICE %d\n",i,memoria.pageframe[i].tamanho,memoria.pageframe[i].index);
+        }
+
+    }
+
+    printf("Numero médio de Fragmentos Externos: %lf\n", ((float)contador_vaos)/contador_tempo);
+    printf("Numero médio de Alocações: %lf\n", ((float)contador_nos/contador_alocacoes));
+    printf("Percentual de alocações negadas: %.2f%%\n", ((float)alocacao_negada/contador_alocacoes)*100);
 	printf("\n\n");
 }
 
@@ -124,6 +131,9 @@ void gerenciador_processos(int file_descriptor) {
 	char command;
 	int tempo = 0;
 	int process_counter = 0;
+    int contador_nos=0;
+    int contador_alocacoes=0;
+    int alocacao_negada=0;
 	Processos tabela[MAX_MEM];
 	CPU cpu;
 	Fila PRONTOS[4]; // filas de prioridade, uma pra cada prioridade
@@ -159,7 +169,7 @@ void gerenciador_processos(int file_descriptor) {
 
 	//strcpy(cpu.programa,tabela[cpu.pid].programa)
 
-	int counter = 0;
+	int counter = 0, contador_vaos=0, contador_tempo = 0;
 	while (counter<strlen(rx)) { // varre todos os comandos do arquivo mestre ou digitados pelo usuario
 		for (int i = 0; i < strlen(rx); i++){ // mostra todos os comandos que ainda tem pra executar
 			if (i != counter) printf("%c",rx[i]);
@@ -173,6 +183,8 @@ void gerenciador_processos(int file_descriptor) {
 	
 		switch (command) {
 		    case 'U': // caso o comando seja uma unidade de tempo
+
+
 		    	if (cpu.EXEC != -1) tempo++; // o tempo de processo em execução é incrementado caso haja um processo em execução
 		    	else { // caso nao ele tira um da fila de prontos caso exista
 					for (int j = 3; j >= 0; j--){
@@ -204,7 +216,7 @@ void gerenciador_processos(int file_descriptor) {
 			}
 			
 			state = tabela[cpu.EXEC].programa[cpu.pc][0]; // extrai o comando atual do programa
-		    	if (cpu.EXEC != -1){ // caso haja um processo na cpu
+            if (cpu.EXEC != -1){ // caso haja um processo na cpu
 				printf("  STATE: %c\n", state);
 				switch(state) {
 					int auxMem, auxMemCopy;
@@ -216,8 +228,10 @@ void gerenciador_processos(int file_descriptor) {
 						sscanf(tabela[cpu.EXEC].programa[cpu.pc],"%*[^0123456789]%d",&cpu.n); // obtem seu tamanho
 						
 
-						auxMem = Fit(&memoria, cpu.n,tipoFit,&next); // coloca na memoria principal
+						auxMem = Fit(&memoria, cpu.n,tipoFit,&next, &contador_nos); // coloca na memoria principal
+                        contador_alocacoes +=1;
 						if(auxMem == -1){ // caso nao tenha espaco aloca na fila de prontos
+                            alocacao_negada +=1;
 							enfileirar(&(PRONTOS[tabela[cpu.EXEC].prioridade]),tabela[cpu.EXEC]);
 							cpu.EXEC = -1;
 							break;
@@ -286,12 +300,12 @@ void gerenciador_processos(int file_descriptor) {
 						transfere_tabela(&cpu, &tabela[cpu.EXEC]);
 						tabela[process_counter]  = duplica_processo(&tabela[cpu.EXEC], process_counter); // duplica o processo
 						
-						auxMemCopy = Fit(&memoria, cpu.n,tipoFit, &next); // coloca o novo processo na memoria
+						auxMemCopy = Fit(&memoria, cpu.n,tipoFit, &next,&contador_nos); // coloca o novo processo na memoria
+                        contador_alocacoes +=1;
 						if(auxMemCopy == -1){ // caso nao a memoria suficiente para aquela simulação
 							fprintf(stderr, "%s","Memoria principal cheia para processo duplicado\n");
 							exit(1);
 							//enfileirar(&(PRONTOS[tabela[process_counter].prioridade]),tabela[process_counter]);
-							break;
 						}
 						
 						tabela[process_counter].inicialMEM = auxMemCopy; // coloca no processo seu endereco de memoria inicial
@@ -320,6 +334,16 @@ void gerenciador_processos(int file_descriptor) {
 			}
 			else 
 				printf("\n");
+
+            for(int i = 0; i < MAX_MEM; i++){
+
+                if(memoria.pageframe[i].index != -1){
+                    contador_vaos +=1;
+                }
+
+            }
+            contador_tempo+=1;
+
 			break;
 
 		    case 'L': // desbloqueia da fila de bloqueados
@@ -336,7 +360,7 @@ void gerenciador_processos(int file_descriptor) {
 
 		    case 'I':
 				fflush(stdout);
-				processo_impressao(&cpu, PRONTOS, &BLOQUEADOS,tabela, memoria); // imprime o estado atual da simulacao
+				processo_impressao(&cpu, PRONTOS, &BLOQUEADOS,tabela, memoria,contador_vaos, contador_tempo, contador_nos, contador_alocacoes, alocacao_negada); // imprime o estado atual da simulacao
 			break;
 
 		    case 'M':

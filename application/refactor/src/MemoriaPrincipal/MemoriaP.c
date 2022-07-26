@@ -32,23 +32,24 @@ int preenche_pagina(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int
     return index_inicial; // retorna o antigo index inicial
 }
 
-int Fit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, char tipo, int *next){
+int Fit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, char tipo, int *next, int *contador_nos){
 	switch (tipo){
 		case 'f':
-			return FirstFit(memoriaPrincipal, tamanho_pagina);
+			return FirstFit(memoriaPrincipal, tamanho_pagina, contador_nos);
 		case 'n':
-			return NextFit(memoriaPrincipal, tamanho_pagina, next);
+			return NextFit(memoriaPrincipal, tamanho_pagina, next, contador_nos);
 		case 'w':
-			return WorstFit(memoriaPrincipal, tamanho_pagina);
+			return WorstFit(memoriaPrincipal, tamanho_pagina,contador_nos);
 		case 'b':
-			return BestFit(memoriaPrincipal, tamanho_pagina);
+			return BestFit(memoriaPrincipal, tamanho_pagina,contador_nos);
 	}
 	exit(-1);
 }
 
-int NextFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *next){
+int NextFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *next, int *contador_nos){
     int i = *next;
     while(1){
+        *contador_nos+=1;
         if(tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho){ // procura o proximo que esta vazio e preenche or espectivo vao
             *next = i;
             return preenche_pagina(memoriaPrincipal, tamanho_pagina, i);
@@ -61,9 +62,12 @@ int NextFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *next){
 
 }
 
-int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
+int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *contador_nos){
     int min = -1;
     for(int i = 0; i<MAX_MEM; i++){
+        if(memoriaPrincipal->pageframe[i].index != -1) {
+            *contador_nos += 1;
+        }
         if(((min == -1) | (memoriaPrincipal->pageframe[min].tamanho > memoriaPrincipal->pageframe[i].tamanho))
             && tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho
             && memoriaPrincipal->pageframe[i].index != -1){ //  procura o menor que caiba o que vc quer alocar e preenche o vao
@@ -75,9 +79,12 @@ int BestFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
 
 }
 
-int WorstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
+int WorstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *contador_nos){
     int max = -1;
     for(int i = 0; i<MAX_MEM; i++){
+        if(memoriaPrincipal->pageframe[i].index != -1) {
+            *contador_nos += 1;
+        }
         if(((max == -1) | (memoriaPrincipal->pageframe[max].tamanho < memoriaPrincipal->pageframe[i].tamanho))
             && tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho
             && memoriaPrincipal->pageframe[i].index != -1){ //procura o maior que caiba o que voce quer alocar e preenche o vao
@@ -89,8 +96,11 @@ int WorstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
 
 }
 
-int FirstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina){
+int FirstFit(MEMORIA_PRINCIPAL *memoriaPrincipal, int tamanho_pagina, int *contador_nos){
     for(int i = 0; i<MAX_MEM; i++){
+        if(memoriaPrincipal->pageframe[i].index != -1) {
+            *contador_nos += 1;
+        }
         if(tamanho_pagina <= memoriaPrincipal->pageframe[i].tamanho){ // procura o primeiro que caiba e preenche o vao
             return preenche_pagina(memoriaPrincipal, tamanho_pagina, i);
         }

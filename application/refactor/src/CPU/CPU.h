@@ -28,6 +28,7 @@ void processo_main(int file_descriptor);
 void gerenciador_processos(int file_descriptor);
 void transfere_cpu(Processos *proc, CPU *cpu);
 void transfere_tabela(CPU *cpu, Processos *proc);
-void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados, Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria);
+void processo_impressao(CPU *cpu, Fila prontos[4], Fila *bloqueados, Processos tabela[MAX_MEM], MEMORIA_PRINCIPAL memoria,
+                        int contador_vaos, int contador_tempo, int contador_nos, int contador_alocacoes,int alocacao_negada);
 
 #endif // __CPU_H__
