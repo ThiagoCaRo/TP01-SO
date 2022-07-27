@@ -107,19 +107,21 @@ int removePaginaV(MEMORIA_VIRTUAL *memoriaVirtual, int tamanho_pagina, int index
     return 0;
 }
 
-void LiberaRam(MEMORIA_VIRTUAL * memoriaVirtual, char tipo, int *next){ // libera a ram de acordo com o endereco de memoria referenciado a mais tempo
+// libera a ram de acordo com o endereco de memoria referenciado a mais tempo
+void LiberaRam(MEMORIA_VIRTUAL * memoriaVirtual, char tipo, int *next){ 
     int minAc = -1;
-    for (int i = 0; i < MAX_VIR; i++){
+    for (int i = 0; i < MAX_VIR; i++){// procura o endereco referenciado a mais tempo
         if (memoriaVirtual->VIR[i].index != -1 &&
             memoriaVirtual->VIR[i].naPrincipal == 1 &&
-            ((minAc == -1) | (memoriaVirtual->VIR[i].ultimoAcesso < memoriaVirtual->VIR[minAc].ultimoAcesso))){ // procura o endereco referenciado a mais tempo
+            ((minAc == -1) | (memoriaVirtual->VIR[i].ultimoAcesso < memoriaVirtual->VIR[minAc].ultimoAcesso))){ 
             minAc = i;
         }
     }
     memoriaVirtual->VIR[minAc].naPrincipal = 0; // coloca a celula como referenciando algo fora da memoria principal
     int ram_i = memoriaVirtual->VIR[minAc].index; // salva o index antigo na ram
     memoriaVirtual->VIR[minAc].index = Fit(&(memoriaVirtual->disco),1,tipo,next); // aloca no disco a variavel
-    memoriaVirtual->disco.variaveis[memoriaVirtual->VIR[minAc].index] = memoriaVirtual->memoriaPrincipal.variaveis[ram_i]; // transfere seu valor para o disco
+    // transfere seu valor para o disco
+    memoriaVirtual->disco.variaveis[memoriaVirtual->VIR[minAc].index] = memoriaVirtual->memoriaPrincipal.variaveis[ram_i]; 
     removePagina(&(memoriaVirtual->memoriaPrincipal),1,ram_i); // remove o endereco antigo da ram
 }
 
@@ -139,7 +141,8 @@ int * GetAccess(MEMORIA_VIRTUAL *memoriaVirtual, int endereco, char tipo, int *n
     else {
         if(memoriaVirtual->VIR[endereco].naPrincipal){ // caso ja esteja na ram
             memoriaVirtual->VIR[endereco].ultimoAcesso = memoriaVirtual->acessos; // atualiza o ultimo acesso
-            return &memoriaVirtual->memoriaPrincipal.variaveis[memoriaVirtual->VIR[endereco].index]; // retorna o endereco da variavel na ram
+            // retorna o endereco da variavel na ram
+            return &memoriaVirtual->memoriaPrincipal.variaveis[memoriaVirtual->VIR[endereco].index];
         }
         else { // caso esteja no disco
             int disco_index = memoriaVirtual->VIR[endereco].index; // obtem o endereco no disco
@@ -153,7 +156,8 @@ int * GetAccess(MEMORIA_VIRTUAL *memoriaVirtual, int endereco, char tipo, int *n
             memoriaVirtual->VIR[endereco].ultimoAcesso = memoriaVirtual->acessos; // atualiza o contador de acesso
             memoriaVirtual->VIR[endereco].naPrincipal = true;
 
-            memoriaVirtual->memoriaPrincipal.variaveis[index] = memoriaVirtual->disco.variaveis[disco_index]; // coloca seu valor do disco na ram
+            // coloca seu valor do disco na ram
+            memoriaVirtual->memoriaPrincipal.variaveis[index] = memoriaVirtual->disco.variaveis[disco_index]; 
 
             removePagina(&(memoriaVirtual->disco),1,disco_index); // libera a variavel do disco
 
